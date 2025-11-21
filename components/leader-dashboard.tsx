@@ -179,10 +179,10 @@ const performanceData = [
 ]
 
 const operativeMetrics = [
-  { name: "Alex Chen", completed: 145, efficiency: "96%", bonus: "450 USDC" },
-  { name: "Sarah Jones", completed: 132, efficiency: "92%", bonus: "380 USDC" },
-  { name: "Mike Ross", completed: 156, efficiency: "98%", bonus: "520 USDC" },
-  { name: "Lisa Wong", completed: 128, efficiency: "91%", bonus: "350 USDC" },
+  { name: "Alex Chen", completed: 145, productQuantity: 1240, efficiency: "96%", bonus: "450 USDC" },
+  { name: "Sarah Jones", completed: 132, productQuantity: 1080, efficiency: "92%", bonus: "380 USDC" },
+  { name: "Mike Ross", completed: 156, productQuantity: 1420, efficiency: "98%", bonus: "520 USDC" },
+  { name: "Lisa Wong", completed: 128, productQuantity: 980, efficiency: "91%", bonus: "350 USDC" },
 ]
 
 interface LeaderDashboardProps {
@@ -361,7 +361,6 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                         <TableHead>Item</TableHead>
                         <TableHead>Time</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Daily Efficiency</TableHead>
                         <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -376,10 +375,6 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                           <TableCell>{order.time}</TableCell>
                           <TableCell>
                             <Badge variant={order.status === "Pending" ? "outline" : "secondary"}>{order.status}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            {/* Daily Efficiency - placeholder para implementación futura */}
-                            <span className="text-sm text-muted-foreground">-</span>
                           </TableCell>
                           <TableCell className="text-right">
                             {order.status === "Pending" ? (
@@ -515,6 +510,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                       <TableRow>
                         <TableHead>Operative Name</TableHead>
                         <TableHead>Orders Completed</TableHead>
+                        <TableHead>Product Quantity</TableHead>
                         <TableHead>Efficiency %</TableHead>
                         <TableHead className="text-right">Bonuses Earned</TableHead>
                       </TableRow>
@@ -524,6 +520,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                         <TableRow key={metric.name}>
                           <TableCell className="font-medium">{metric.name}</TableCell>
                           <TableCell>{metric.completed}</TableCell>
+                          <TableCell>{metric.productQuantity}</TableCell>
                           <TableCell>{metric.efficiency}</TableCell>
                           <TableCell className="text-right font-mono">{metric.bonus}</TableCell>
                         </TableRow>
