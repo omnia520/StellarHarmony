@@ -17,7 +17,7 @@ export function LoginScreen({ onConnect }: LoginScreenProps) {
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <Truck className="h-6 w-6" />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">StellarLogistics</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Harmory</h1>
       </div>
 
       <Card className="w-full max-w-md border-border/50 shadow-xl">

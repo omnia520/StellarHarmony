@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   LayoutDashboard,
   Package,
@@ -24,28 +24,147 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts"
 
-// Mock Data
-const orders = [
-  { id: "ORD-7829", date: "2023-11-20", operative: "Alex Chen", items: 12, status: "Pending", time: "14m" },
-  { id: "ORD-7830", date: "2023-11-20", operative: "Sarah Jones", items: 8, status: "Pending", time: "9m" },
-  { id: "ORD-7831", date: "2023-11-20", operative: "Mike Ross", items: 24, status: "Pending", time: "22m" },
+// Interfaz para los datos de la base de datos
+interface OrderFromDB {
+  Orden: number
+  Cantidad: number
+  Sacador: string | null
+  Empacador: string | null
+  Estado: string
+  FechalnicioSacado: string | null
+  FechaFinSacado: string | null
+  FechalnicioEmpaque: string | null
+  FechaFinEmpaque: string | null
+}
+
+// Interfaz para los datos procesados de la orden
+interface ProcessedOrder {
+  id: number
+  date: string
+  picker: string | null
+  packer: string | null
+  items: number
+  status: string
+  time: string
+  result?: "Correct" | "Issues" | "Rejected"
+}
+
+// Función para calcular el tiempo total en minutos
+function calculateTime(order: OrderFromDB): string {
+  let totalMinutes = 0
+
+  // Calcular diferencia entre FechaFinSacado - FechaInicioSacado
+  if (order.FechalnicioSacado && order.FechaFinSacado) {
+    const inicioSacado = new Date(order.FechalnicioSacado)
+    const finSacado = new Date(order.FechaFinSacado)
+    if (!isNaN(inicioSacado.getTime()) && !isNaN(finSacado.getTime())) {
+      const diffSacado = (finSacado.getTime() - inicioSacado.getTime()) / (1000 * 60)
+      totalMinutes += diffSacado
+    }
+  }
+
+  // Calcular diferencia entre FechaFinEmpaque - FechaInicioEmpaque
+  if (order.FechalnicioEmpaque && order.FechaFinEmpaque) {
+    const inicioEmpaque = new Date(order.FechalnicioEmpaque)
+    const finEmpaque = new Date(order.FechaFinEmpaque)
+    if (!isNaN(inicioEmpaque.getTime()) && !isNaN(finEmpaque.getTime())) {
+      const diffEmpaque = (finEmpaque.getTime() - inicioEmpaque.getTime()) / (1000 * 60)
+      totalMinutes += diffEmpaque
+    }
+  }
+
+  // Formatear como "Xm" o "Xh Ym"
+  if (totalMinutes < 60) {
+    return `${Math.round(totalMinutes)}m`
+  } else {
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = Math.round(totalMinutes % 60)
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
+  }
+}
+
+// Función para procesar órdenes de la BD
+function processOrders(ordersFromDB: OrderFromDB[]): ProcessedOrder[] {
+  return ordersFromDB.map((order) => {
+    const time = calculateTime(order)
+    const processed: ProcessedOrder = {
+      id: order.Orden,
+      date: order.FechaFinEmpaque || "",
+      picker: order.Sacador,
+      packer: order.Empacador,
+      items: order.Cantidad,
+      status: order.Estado,
+      time,
+    }
+
+    // Si el estado es "Reviewed", determinar el resultado basado en algún criterio
+    // Por ahora, asumimos que si está Reviewed, necesitamos un campo adicional para el resultado
+    // Esto se puede ajustar según la lógica de negocio
+    if (order.Estado === "Reviewed") {
+      // Aquí puedes agregar lógica para determinar si es Correct, Issues o Rejected
+      // Por ahora, lo dejamos como undefined y se mostrará basado en el estado
+    }
+
+    return processed
+  })
+}
+
+// Mock Data - Estructura de la base de datos
+const mockOrdersFromDB: OrderFromDB[] = [
   {
-    id: "ORD-7832",
-    date: "2023-11-19",
-    operative: "Alex Chen",
-    items: 15,
-    status: "Reviewed",
-    result: "Correct",
-    time: "16m",
+    Orden: 7829,
+    Cantidad: 12,
+    Sacador: "Alex Chen",
+    Empacador: "Sarah Jones",
+    Estado: "Pending",
+    FechalnicioSacado: "2023-11-20T10:00:00",
+    FechaFinSacado: "2023-11-20T10:12:00",
+    FechalnicioEmpaque: "2023-11-20T10:12:00",
+    FechaFinEmpaque: "2023-11-20T10:26:00",
   },
   {
-    id: "ORD-7833",
-    date: "2023-11-19",
-    operative: "Sarah Jones",
-    items: 5,
-    status: "Reviewed",
-    result: "Issues",
-    time: "12m",
+    Orden: 7830,
+    Cantidad: 8,
+    Sacador: "Mike Ross",
+    Empacador: "Lisa Wong",
+    Estado: "Pending",
+    FechalnicioSacado: "2023-11-20T11:00:00",
+    FechaFinSacado: "2023-11-20T11:07:00",
+    FechalnicioEmpaque: "2023-11-20T11:07:00",
+    FechaFinEmpaque: "2023-11-20T11:16:00",
+  },
+  {
+    Orden: 7831,
+    Cantidad: 24,
+    Sacador: "Alex Chen",
+    Empacador: "Mike Ross",
+    Estado: "Pending",
+    FechalnicioSacado: "2023-11-20T12:00:00",
+    FechaFinSacado: "2023-11-20T12:18:00",
+    FechalnicioEmpaque: "2023-11-20T12:18:00",
+    FechaFinEmpaque: "2023-11-20T12:40:00",
+  },
+  {
+    Orden: 7832,
+    Cantidad: 15,
+    Sacador: "Sarah Jones",
+    Empacador: "Alex Chen",
+    Estado: "Reviewed",
+    FechalnicioSacado: "2023-11-19T09:00:00",
+    FechaFinSacado: "2023-11-19T09:11:00",
+    FechalnicioEmpaque: "2023-11-19T09:11:00",
+    FechaFinEmpaque: "2023-11-19T09:27:00",
+  },
+  {
+    Orden: 7833,
+    Cantidad: 5,
+    Sacador: "Lisa Wong",
+    Empacador: "Sarah Jones",
+    Estado: "Reviewed",
+    FechalnicioSacado: "2023-11-19T14:00:00",
+    FechaFinSacado: "2023-11-19T14:04:00",
+    FechalnicioEmpaque: "2023-11-19T14:04:00",
+    FechaFinEmpaque: "2023-11-19T14:16:00",
   },
 ]
 
@@ -72,6 +191,47 @@ interface LeaderDashboardProps {
 
 export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
   const [activeTab, setActiveTab] = useState("activities")
+  const [orders, setOrders] = useState<ProcessedOrder[]>([])
+
+  // Cargar y procesar órdenes
+  useEffect(() => {
+    // Aquí se conectaría a la API/BD real
+    // Por ahora usamos datos mock
+    const processed = processOrders(mockOrdersFromDB)
+    setOrders(processed)
+  }, [])
+
+  // Función para actualizar el estado de una orden
+  const handleOrderAction = (orderId: number, action: "Correct" | "Issues" | "Rejected") => {
+    setOrders((prevOrders) =>
+      prevOrders.map((order) => {
+        if (order.id === orderId) {
+          return {
+            ...order,
+            status: "Reviewed",
+            result: action,
+          }
+        }
+        return order
+      })
+    )
+  }
+
+  // Calcular órdenes pendientes
+  const pendingOrdersCount = orders.filter((order) => order.status === "Pending").length
+
+  // Calcular Daily Efficiency (placeholder - se implementará mañana)
+  const calculateDailyEfficiency = (): string => {
+    // TODO: Calcular basado en promedio de tiempo histórico
+    // Por ahora retornamos un valor placeholder
+    const reviewedOrders = orders.filter((order) => order.status === "Reviewed")
+    if (reviewedOrders.length === 0) return "0%"
+    
+    // Lógica temporal - se ajustará mañana
+    return "94.2%"
+  }
+
+  const dailyEfficiency = calculateDailyEfficiency()
 
   return (
     <div className="flex min-h-screen w-full bg-background">
@@ -142,8 +302,8 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                     <Clock className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">24</div>
-                    <p className="text-xs text-muted-foreground">+12% from last hour</p>
+                    <div className="text-2xl font-bold">{pendingOrdersCount}</div>
+                    <p className="text-xs text-muted-foreground">Orders awaiting review</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -152,8 +312,8 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">94.2%</div>
-                    <p className="text-xs text-muted-foreground">+2.1% from yesterday</p>
+                    <div className="text-2xl font-bold">{dailyEfficiency}</div>
+                    <p className="text-xs text-muted-foreground">Based on historical average</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -194,12 +354,14 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Order ID</TableHead>
+                        <TableHead>OrdenID</TableHead>
                         <TableHead>Date</TableHead>
-                        <TableHead>Operative</TableHead>
-                        <TableHead>Items</TableHead>
+                        <TableHead>Picker</TableHead>
+                        <TableHead>Packer</TableHead>
+                        <TableHead>Item</TableHead>
                         <TableHead>Time</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Daily Efficiency</TableHead>
                         <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -208,11 +370,16 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                         <TableRow key={order.id}>
                           <TableCell className="font-medium">{order.id}</TableCell>
                           <TableCell>{order.date}</TableCell>
-                          <TableCell>{order.operative}</TableCell>
+                          <TableCell>{order.picker || "-"}</TableCell>
+                          <TableCell>{order.packer || "-"}</TableCell>
                           <TableCell>{order.items}</TableCell>
                           <TableCell>{order.time}</TableCell>
                           <TableCell>
                             <Badge variant={order.status === "Pending" ? "outline" : "secondary"}>{order.status}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {/* Daily Efficiency - placeholder para implementación futura */}
+                            <span className="text-sm text-muted-foreground">-</span>
                           </TableCell>
                           <TableCell className="text-right">
                             {order.status === "Pending" ? (
@@ -221,6 +388,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                                   size="sm"
                                   variant="ghost"
                                   className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 hover:text-green-700"
+                                  onClick={() => handleOrderAction(order.id, "Correct")}
                                 >
                                   <CheckCircle2 className="h-5 w-5" />
                                   <span className="sr-only">Approve</span>
@@ -229,6 +397,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                                   size="sm"
                                   variant="ghost"
                                   className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+                                  onClick={() => handleOrderAction(order.id, "Issues")}
                                 >
                                   <AlertTriangle className="h-5 w-5" />
                                   <span className="sr-only">Issue</span>
@@ -237,6 +406,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                                   size="sm"
                                   variant="ghost"
                                   className="h-8 w-8 p-0 text-muted-foreground hover:bg-gray-100 hover:text-gray-700"
+                                  onClick={() => handleOrderAction(order.id, "Rejected")}
                                 >
                                   <XCircle className="h-5 w-5" />
                                   <span className="sr-only">Reject</span>
@@ -244,9 +414,15 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                               </div>
                             ) : (
                               <span
-                                className={`text-sm font-medium ${order.result === "Correct" ? "text-green-600" : "text-amber-600"}`}
+                                className={`text-sm font-medium ${
+                                  order.result === "Correct"
+                                    ? "text-green-600"
+                                    : order.result === "Issues"
+                                      ? "text-amber-600"
+                                      : "text-red-600"
+                                }`}
                               >
-                                {order.result}
+                                {order.result || "Reviewed"}
                               </span>
                             )}
                           </TableCell>
