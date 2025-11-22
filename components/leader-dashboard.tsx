@@ -27,6 +27,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine } from "recharts"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 // Interfaz para los datos de la base de datos
 interface OrderFromDB {
@@ -168,6 +176,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
     id: "",
     wallet: ""
   })
+  const [statusFilter, setStatusFilter] = useState<string | null>(null) // null = todos, "Pending" o "Terminado"
 
   // Cargar órdenes desde la API
   useEffect(() => {
@@ -418,6 +427,28 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
     }
   }
 
+  // Filtrar órdenes según el filtro de status
+  const filteredOrders = orders.filter((order) => {
+    // Eliminar órdenes con status "Empacando" (por si acaso quedan algunas)
+    if (order.status === "Empacando" || order.status === "empacando") {
+      return false
+    }
+    // Aplicar filtro de status
+    if (statusFilter === null) {
+      return true // Mostrar todas
+    }
+    // Normalizar el status para comparar
+    const normalizedStatus = order.status.toLowerCase()
+    if (statusFilter === "Pending") {
+      return normalizedStatus === "pending"
+    }
+    if (statusFilter === "Terminado") {
+      // "Terminado" incluye también "Reviewed" ya que son órdenes completadas
+      return normalizedStatus === "terminado" || normalizedStatus === "reviewed"
+    }
+    return true
+  })
+
   // Calcular órdenes pendientes
   const pendingOrdersCount = orders.filter((order) => order.status === "Pending").length
 
@@ -546,9 +577,35 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="Search orders..." className="pl-8 w-[200px]" />
                       </div>
-                      <Button variant="outline" size="icon">
-                        <Filter className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="icon">
+                            <Filter className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => setStatusFilter(null)}
+                            className={statusFilter === null ? "bg-accent" : ""}
+                          >
+                            All Orders
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setStatusFilter("Pending")}
+                            className={statusFilter === "Pending" ? "bg-accent" : ""}
+                          >
+                            Pending
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setStatusFilter("Terminado")}
+                            className={statusFilter === "Terminado" ? "bg-accent" : ""}
+                          >
+                            Terminado
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <Button variant="outline" size="icon">
                         <Download className="h-4 w-4" />
                       </Button>
@@ -560,9 +617,11 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                     <div className="flex items-center justify-center py-8">
                       <p className="text-muted-foreground">Cargando órdenes...</p>
                     </div>
-                  ) : orders.length === 0 ? (
+                  ) : filteredOrders.length === 0 ? (
                     <div className="flex items-center justify-center py-8">
-                      <p className="text-muted-foreground">No orders available</p>
+                      <p className="text-muted-foreground">
+                        {statusFilter ? `No ${statusFilter} orders available` : "No orders available"}
+                      </p>
                     </div>
                   ) : (
                     <Table>
@@ -579,7 +638,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {orders.map((order) => (
+                        {filteredOrders.map((order) => (
                         <TableRow key={order.id}>
                           <TableCell className="font-medium">{order.id}</TableCell>
                           <TableCell>{order.date}</TableCell>
