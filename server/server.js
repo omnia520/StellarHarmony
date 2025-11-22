@@ -160,14 +160,15 @@ app.get('/api/operative/ordenes/:nombre', async (req, res) => {
     
     const request = pool.request().input('nombre', sql.NVarChar(50), nombre);
     
-    // Agregar filtro de fechas si se proporcionan
+    // Agregar filtro de fechas si se proporcionan (comparando strings ya que FechaFinEmpaque es nvarchar)
     if (fechaInicio && fechaFin) {
-      query += ` AND CAST(FechaFinEmpaque AS DATE) BETWEEN @fechaInicio AND @fechaFin`;
-      request.input('fechaInicio', sql.Date, fechaInicio);
-      request.input('fechaFin', sql.Date, fechaFin);
+      query += ` AND FechaFinEmpaque BETWEEN @fechaInicio AND @fechaFin`;
+      request.input('fechaInicio', sql.NVarChar(50), fechaInicio);
+      request.input('fechaFin', sql.NVarChar(50), fechaFin);
     }
     
-    query += ` ORDER BY FechaFinEmpaque DESC`;
+    // NO usar ORDER BY aquí - puede causar conversión implícita a fecha que falla con muchos registros
+    // Ordenaremos en el frontend si es necesario
     
     const result = await request.query(query);
     res.json(result.recordset);
@@ -184,31 +185,102 @@ app.get('/api/operative/chart/:nombre', async (req, res) => {
     const nombre = req.params.nombre;
     const { fechaInicio, fechaFin } = req.query;
     
+    console.log(`📊 Consultando gráfico para: ${nombre}, fechas: ${fechaInicio} - ${fechaFin}`);
+    
+    // Como FechaFinEmpaque es nvarchar, obtenemos todos los registros primero
+    // y luego los procesamos en JavaScript para agrupar por fecha
     let query = `
       SELECT 
-        CAST(FechaFinEmpaque AS DATE) AS Fecha,
-        SUM(Cantidad) AS Cantidad,
-        COUNT(*) AS Ordenes
+        FechaFinEmpaque,
+        Cantidad
       FROM Ordenes
       WHERE (Sacador = @nombre OR Empacador = @nombre)
         AND FechaFinEmpaque IS NOT NULL
+        AND FechaFinEmpaque != ''
+        AND FechaFinEmpaque != 'NULL'
     `;
     
     const request = pool.request().input('nombre', sql.NVarChar(50), nombre);
     
-    // Agregar filtro de fechas si se proporcionan
+    // Agregar filtro de fechas si se proporcionan (comparando strings directamente)
+    // NO usar funciones SQL como LEFT() o ORDER BY porque SQL Server intenta convertir a fecha implícitamente
     if (fechaInicio && fechaFin) {
-      query += ` AND CAST(FechaFinEmpaque AS DATE) BETWEEN @fechaInicio AND @fechaFin`;
-      request.input('fechaInicio', sql.Date, fechaInicio);
-      request.input('fechaFin', sql.Date, fechaFin);
+      // Formatear fechas para comparación string (YYYY-MM-DD)
+      const fechaInicioStr = typeof fechaInicio === 'string' ? fechaInicio : fechaInicio;
+      const fechaFinStr = typeof fechaFin === 'string' ? fechaFin : fechaFin;
+      // Comparar strings directamente sin usar funciones SQL
+      query += ` AND FechaFinEmpaque >= @fechaInicio AND FechaFinEmpaque <= @fechaFin`;
+      request.input('fechaInicio', sql.NVarChar(50), fechaInicioStr.substring(0, 10));
+      request.input('fechaFin', sql.NVarChar(50), fechaFinStr.substring(0, 10) + ' 23:59:59');
     }
     
-    query += ` GROUP BY CAST(FechaFinEmpaque AS DATE) ORDER BY CAST(FechaFinEmpaque AS DATE) ASC`;
+    // NO usar ORDER BY aquí - causa conversión implícita a fecha que falla con muchos registros
+    // Ordenaremos en JavaScript después del procesamiento (línea 265)
     
     const result = await request.query(query);
-    res.json(result.recordset);
+    
+    console.log(`✅ Datos del gráfico obtenidos: ${result.recordset.length} registros`);
+    
+    // Agrupar por fecha en JavaScript (más seguro que en SQL)
+    const groupedByDate = {};
+    
+    result.recordset.forEach(row => {
+      const fechaStr = row.FechaFinEmpaque;
+      if (!fechaStr || fechaStr === 'NULL' || fechaStr.trim() === '') return;
+      
+      // Extraer solo la parte de fecha (primeros 10 caracteres: YYYY-MM-DD)
+      let fechaKey = fechaStr.trim().substring(0, 10);
+      
+      // Si no tiene formato YYYY-MM-DD, intentar parsear
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaKey)) {
+        try {
+          const fechaParsed = new Date(fechaStr);
+          if (!isNaN(fechaParsed.getTime())) {
+            fechaKey = fechaParsed.toISOString().split('T')[0];
+          } else {
+            // Intentar formato DD/MM/YYYY o MM/DD/YYYY
+            const parts = fechaStr.split(/[/-]/);
+            if (parts.length === 3) {
+              // Asumir formato YYYY-MM-DD o intentar MM/DD/YYYY
+              if (parts[0].length === 4) {
+                fechaKey = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+              } else {
+                fechaKey = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Error parseando fecha:', fechaStr, e);
+          return; // Saltar este registro
+        }
+      }
+      
+      if (!groupedByDate[fechaKey]) {
+        groupedByDate[fechaKey] = { cantidad: 0, ordenes: 0 };
+      }
+      
+      groupedByDate[fechaKey].cantidad += Number(row.Cantidad) || 0;
+      groupedByDate[fechaKey].ordenes += 1;
+    });
+    
+    // Convertir a array y formatear
+    const formatted = Object.keys(groupedByDate)
+      .sort() // Ordenar por fecha
+      .map(fechaKey => {
+        const data = groupedByDate[fechaKey];
+        return {
+          Fecha: fechaKey,
+          Cantidad: data.cantidad,
+          Ordenes: data.ordenes,
+          FechaParsed: fechaKey
+        };
+      });
+    
+    console.log(`✅ Datos agrupados: ${formatted.length} fechas únicas`);
+    res.json(formatted);
   } catch (err) {
-    console.error('Error al obtener datos del gráfico:', err);
+    console.error('❌ Error al obtener datos del gráfico:', err);
+    console.error('Stack:', err.stack);
     res.status(500).json({ error: 'Error al obtener datos del gráfico', details: err.message });
   }
 });

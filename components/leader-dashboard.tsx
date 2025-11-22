@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine } from "recharts"
 
 // Interfaz para los datos de la base de datos
 interface OrderFromDB {
@@ -143,6 +143,12 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
   const [orders, setOrders] = useState<ProcessedOrder[]>([])
   const [operativeMetrics, setOperativeMetrics] = useState<OperativeMetric[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedWorker, setSelectedWorker] = useState<string | null>(null)
+  const [workerOrders, setWorkerOrders] = useState<ProcessedOrder[]>([])
+  const [chartData, setChartData] = useState<any[]>([])
+  const [fechaInicio, setFechaInicio] = useState<string>("")
+  const [fechaFin, setFechaFin] = useState<string>("")
+  const [loadingWorkerData, setLoadingWorkerData] = useState(false)
 
   // Cargar órdenes desde la API
   useEffect(() => {
@@ -185,6 +191,121 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
       fetchMetrics()
     }
   }, [activeTab])
+
+  // Cargar datos del trabajador seleccionado
+  useEffect(() => {
+    if (!selectedWorker) {
+      console.log('❌ No hay trabajador seleccionado')
+      setWorkerOrders([])
+      setChartData([])
+      return
+    }
+
+    console.log('🔄 Cargando datos para trabajador:', selectedWorker)
+
+    const fetchWorkerData = async () => {
+      setLoadingWorkerData(true)
+      try {
+        // Construir query params para fechas
+        const params = new URLSearchParams()
+        if (fechaInicio) params.append('fechaInicio', fechaInicio)
+        if (fechaFin) params.append('fechaFin', fechaFin)
+        
+        const queryString = params.toString()
+        const url = `${API_URL}/api/operative/ordenes/${encodeURIComponent(selectedWorker)}${queryString ? `?${queryString}` : ''}`
+        
+        console.log('📡 Cargando órdenes desde:', url)
+        
+        // Cargar órdenes
+        const ordersResponse = await fetch(url)
+        if (ordersResponse.ok) {
+          const ordersData: OrderFromDB[] = await ordersResponse.json()
+          console.log('✅ Órdenes recibidas:', ordersData.length)
+          const processed = processOrders(ordersData)
+          setWorkerOrders(processed)
+          console.log('✅ Órdenes procesadas:', processed.length)
+        } else {
+          console.error('❌ Error al cargar órdenes:', ordersResponse.status, await ordersResponse.text())
+        }
+
+        // Cargar datos del gráfico
+        const chartUrl = `${API_URL}/api/operative/chart/${encodeURIComponent(selectedWorker)}${queryString ? `?${queryString}` : ''}`
+        const chartResponse = await fetch(chartUrl)
+        if (chartResponse.ok) {
+          const chartDataRaw = await chartResponse.json()
+          console.log('📊 Datos del gráfico recibidos:', chartDataRaw)
+          
+          // Formatear datos para el gráfico
+          const formatted = chartDataRaw.map((item: any) => {
+            // El servidor ya devuelve FechaParsed en formato YYYY-MM-DD
+            let fechaStr = item.FechaParsed || item.Fecha || ''
+            let fecha: Date | null = null
+            
+            // Parsear la fecha (ya viene en formato YYYY-MM-DD del servidor)
+            if (fechaStr) {
+              try {
+                // Intentar parsear como YYYY-MM-DD
+                const dateParts = fechaStr.split(/[-/]/)
+                if (dateParts.length === 3) {
+                  // Si el primer elemento tiene 4 dígitos, es YYYY-MM-DD
+                  if (dateParts[0].length === 4) {
+                    fecha = new Date(`${dateParts[0]}-${dateParts[1].padStart(2, '0')}-${dateParts[2].padStart(2, '0')}`)
+                  } else {
+                    // Si no, puede ser DD/MM/YYYY
+                    fecha = new Date(`${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`)
+                  }
+                } else {
+                  fecha = new Date(fechaStr)
+                }
+                
+                if (isNaN(fecha.getTime())) {
+                  fecha = null
+                }
+              } catch (e) {
+                console.warn('Error parseando fecha:', fechaStr, e)
+                fecha = null
+              }
+            }
+            
+            // Formatear fecha para mostrar en el eje X
+            const fechaFormateada = fecha && !isNaN(fecha.getTime())
+              ? fecha.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+              : fechaStr.substring(0, 10) || 'Sin fecha'
+            
+            return {
+              fecha: fechaFormateada,
+              cantidad: Number(item.Cantidad) || 0,
+              ordenes: Number(item.Ordenes) || 0,
+              fechaKey: fechaStr.substring(0, 10), // Para ordenamiento
+            }
+          }).sort((a, b) => {
+            // Ordenar por fecha
+            if (a.fechaKey && b.fechaKey) {
+              return a.fechaKey.localeCompare(b.fechaKey)
+            }
+            return 0
+          }).map(item => ({
+            fecha: item.fecha,
+            cantidad: item.cantidad,
+            ordenes: item.ordenes,
+          }))
+          
+          console.log('✅ Datos formateados:', formatted)
+          setChartData(formatted)
+        } else {
+          console.error('❌ Error al cargar gráfico:', chartResponse.status, await chartResponse.text())
+        }
+      } catch (error) {
+        console.error("Error al cargar datos del trabajador:", error)
+        setWorkerOrders([])
+        setChartData([])
+      } finally {
+        setLoadingWorkerData(false)
+      }
+    }
+
+    fetchWorkerData()
+  }, [selectedWorker, fechaInicio, fechaFin])
 
   // Función para actualizar el estado de una orden
   const handleOrderAction = async (orderId: number, action: "Correct" | "Issues" | "Rejected") => {
@@ -545,7 +666,23 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                         </TableRow>
                       ) : (
                         operativeMetrics.map((metric) => (
-                          <TableRow key={metric.name}>
+                          <TableRow 
+                            key={metric.name}
+                            className={`cursor-pointer hover:bg-muted/50 transition-colors ${selectedWorker === metric.name ? 'bg-muted' : ''}`}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              console.log('👤 Trabajador seleccionado:', metric.name)
+                              setSelectedWorker(metric.name)
+                              // Scroll hacia la sección del trabajador
+                              setTimeout(() => {
+                                const element = document.getElementById('worker-details')
+                                if (element) {
+                                  element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                }
+                              }, 100)
+                            }}
+                          >
                             <TableCell className="font-medium">{metric.name}</TableCell>
                             <TableCell>{metric.completed}</TableCell>
                             <TableCell>{metric.productQuantity}</TableCell>
@@ -558,6 +695,185 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                   </Table>
                 </CardContent>
               </Card>
+
+              {/* Sección de trabajador seleccionado */}
+              {selectedWorker && (
+                <div id="worker-details" className="space-y-6 mt-6 border-t pt-6">
+                  {/* Filtros de fecha - Simple sin título */}
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex gap-4 items-end">
+                        <div className="flex-1">
+                          <label className="text-sm font-medium mb-2 block">Fecha Inicio</label>
+                          <Input
+                            type="date"
+                            value={fechaInicio}
+                            onChange={(e) => setFechaInicio(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-sm font-medium mb-2 block">Fecha Fin</label>
+                          <Input
+                            type="date"
+                            value={fechaFin}
+                            onChange={(e) => setFechaFin(e.target.value)}
+                            min={fechaInicio}
+                          />
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setFechaInicio("")
+                            setFechaFin("")
+                          }}
+                        >
+                          Limpiar Filtros
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Gráfico de desempeño - Sin título */}
+                  <Card>
+                    <CardContent className="pt-6">
+                      {loadingWorkerData ? (
+                        <div className="flex items-center justify-center" style={{ minHeight: '400px' }}>
+                          <p className="text-muted-foreground">Cargando datos del gráfico...</p>
+                        </div>
+                      ) : chartData.length === 0 ? (
+                        <div className="flex items-center justify-center" style={{ minHeight: '400px' }}>
+                          <p className="text-muted-foreground">
+                            No hay datos disponibles{fechaInicio || fechaFin ? ' para el rango de fechas seleccionado' : ''}
+                          </p>
+                        </div>
+                      ) : (
+                        <div style={{ width: '100%', height: '400px', minHeight: '400px' }}>
+                          <ResponsiveContainer width="100%" height="100%" minHeight={400}>
+                          <BarChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                            <XAxis
+                              dataKey="fecha"
+                              stroke="var(--muted-foreground)"
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <YAxis
+                              stroke="var(--muted-foreground)"
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                              label={{ value: 'Cantidad', angle: -90, position: 'insideLeft' }}
+                              domain={[0, Math.max(3000, ...chartData.map(d => d.cantidad))]}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: "var(--card)",
+                                borderColor: "var(--border)",
+                                borderRadius: "var(--radius)",
+                              }}
+                              itemStyle={{ color: "var(--foreground)" }}
+                              formatter={(value: any) => [`${value} unidades`, "Cantidad"]}
+                            />
+                            <ReferenceLine 
+                              y={3000} 
+                              stroke="#9333ea" 
+                              strokeDasharray="4 4" 
+                              strokeWidth={2}
+                              label={{ 
+                                value: "Meta: 3000", 
+                                position: "right",
+                                fill: "#9333ea",
+                                fontSize: 12
+                              }}
+                            />
+                            <Bar dataKey="cantidad" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Tabla de órdenes del trabajador - Sin título */}
+                  <Card>
+                    <CardContent className="pt-6">
+                      {loadingWorkerData ? (
+                        <div className="flex items-center justify-center py-8">
+                          <p className="text-muted-foreground">Cargando órdenes...</p>
+                        </div>
+                      ) : workerOrders.length === 0 ? (
+                        <div className="flex items-center justify-center py-8">
+                          <p className="text-muted-foreground">
+                            No hay órdenes disponibles{fechaInicio || fechaFin ? ' para el rango de fechas seleccionado' : ''}
+                          </p>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>OrdenID</TableHead>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Role</TableHead>
+                              <TableHead>Picker</TableHead>
+                              <TableHead>Packer</TableHead>
+                              <TableHead>Items</TableHead>
+                              <TableHead>Time</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Result</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {workerOrders.map((order) => {
+                              const role = order.picker === selectedWorker && order.packer === selectedWorker
+                                ? "Both"
+                                : order.picker === selectedWorker
+                                  ? "Picker"
+                                  : "Packer"
+                              
+                              return (
+                                <TableRow key={order.id}>
+                                  <TableCell className="font-medium">{order.id}</TableCell>
+                                  <TableCell>{order.date}</TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline">{role}</Badge>
+                                  </TableCell>
+                                  <TableCell>{order.picker || "-"}</TableCell>
+                                  <TableCell>{order.packer || "-"}</TableCell>
+                                  <TableCell>{order.items}</TableCell>
+                                  <TableCell>{order.time}</TableCell>
+                                  <TableCell>
+                                    <Badge variant={order.status === "Pending" ? "outline" : "secondary"}>
+                                      {order.status}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    {order.result ? (
+                                      <span
+                                        className={`text-sm font-medium ${
+                                          order.result === "Correct"
+                                            ? "text-green-600"
+                                            : order.result === "Issues"
+                                              ? "text-amber-600"
+                                              : "text-red-600"
+                                        }`}
+                                      >
+                                        {order.result}
+                                      </span>
+                                    ) : (
+                                      <span className="text-sm text-muted-foreground">-</span>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            })}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
           )}
         </div>
