@@ -40,8 +40,6 @@ This leads to:
 - Higher conflict inside the team  
 - Difficulty meeting goals and keeping good workers
 
-> In short: **we have “Juan” everywhere** – the demotivated worker who doesn’t know exactly what to do, when, or why it matters.
-
 ---
 
 ### 2. In the Web3 ecosystem
