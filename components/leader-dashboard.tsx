@@ -155,8 +155,15 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
     const fetchOrders = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`${API_URL}/api/ordenes`)
-        if (!response.ok) throw new Error("Error al cargar órdenes")
+        const response = await fetch(`${API_URL}/api/ordenes`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        if (!response.ok) {
+          throw new Error(`Error al cargar órdenes: ${response.status} ${response.statusText}`)
+        }
         const data: OrderFromDB[] = await response.json()
         const processed = processOrders(data)
         setOrders(processed)
@@ -164,6 +171,10 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
         console.error("Error al cargar órdenes:", error)
         // En caso de error, dejar el array vacío
         setOrders([])
+        // Mostrar mensaje de error más descriptivo
+        if (error instanceof Error) {
+          console.error("Detalles del error:", error.message)
+        }
       } finally {
         setLoading(false)
       }
@@ -176,14 +187,24 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/metrics/operatives`)
-        if (!response.ok) throw new Error("Error al cargar métricas")
+        const response = await fetch(`${API_URL}/api/metrics/operatives`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        if (!response.ok) {
+          throw new Error(`Error al cargar métricas: ${response.status} ${response.statusText}`)
+        }
         const data: OperativeMetric[] = await response.json()
         setOperativeMetrics(data)
       } catch (error) {
         console.error("Error al cargar métricas:", error)
         // En caso de error, usar datos vacíos
         setOperativeMetrics([])
+        if (error instanceof Error) {
+          console.error("Detalles del error:", error.message)
+        }
       }
     }
 
@@ -278,13 +299,13 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
               ordenes: Number(item.Ordenes) || 0,
               fechaKey: fechaStr.substring(0, 10), // Para ordenamiento
             }
-          }).sort((a, b) => {
+          }).sort((a: any, b: any) => {
             // Ordenar por fecha
             if (a.fechaKey && b.fechaKey) {
               return a.fechaKey.localeCompare(b.fechaKey)
             }
             return 0
-          }).map(item => ({
+          }).map((item: any) => ({
             fecha: item.fecha,
             cantidad: item.cantidad,
             ordenes: item.ordenes,

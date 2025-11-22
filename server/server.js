@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import sql from 'mssql';
-import dbConfig from './dbConfig.js';
+// import sql from 'mssql';
+// import dbConfig from './dbConfig.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -10,23 +10,127 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Pool de conexiones
-let pool;
+// ============================================
+// DATOS HARDCODEADOS - IGNORAR BASE DE DATOS
+// ============================================
 
-// Función para obtener el pool de conexiones
-async function getPool() {
-  if (!pool) {
-    try {
-      pool = await sql.connect(dbConfig);
-      console.log('✅ Conectado a la base de datos SQL Server');
-      return pool;
-    } catch (err) {
-      console.error('❌ Error al conectar a la base de datos:', err);
-      throw err;
+// Usuarios: 1 líder + 10 trabajadores
+const usuarios = [
+  { Nombre: 'Carlos', Rol: 'lider', Wallet: 'GBI2K3J5M6N7P8Q9R0S1T2U3V4W5X6Y7Z8A9B0C1D2E3F4G5H6I7J8K9L0M1N2O3P4Q5R6S7T8U9V0W1X2Y3Z4A5B6C7D8E9F0G1H2I3J4K5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0' },
+  { Nombre: 'Johan', Rol: 'trabajador', Wallet: 'GBI2K3J5M6N7P8Q9R0S1T2U3V4W5X6Y7Z8A9B0C1D2E3F4G5H6I7J8K9L0M1N2O3P4Q5R6S7T8U9V0W1X2Y3Z4A5B6C7D8E9F0G1H2I3J4K5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0HSZY' },
+  { Nombre: 'Andres', Rol: 'trabajador', Wallet: 'GDBK3J5M6N7P8Q9R0S1T2U3V4W5X6Y7Z8A9B0C1D2E3F4G5H6I7J8K9L0M1N2O3P4Q5R6S7T8U9V0W1X2Y3Z4A5B6C7D8E9F0G1H2I3J4K5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0ABCD' },
+  { Nombre: 'Angel', Rol: 'trabajador', Wallet: 'GECK3J5M6N7P8Q9R0S1T2U3V4W5X6Y7Z8A9B0C1D2E3F4G5H6I7J8K9L0M1N2O3P4Q5R6S7T8U9V0W1X2Y3Z4A5B6C7D8E9F0G1H2I3J4K5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0EFGH' },
+  { Nombre: 'Emilio', Rol: 'trabajador', Wallet: 'GDFK3J5M6N7P8Q9R0S1T2U3V4W5X6Y7Z8A9B0C1D2E3F4G5H6I7J8K9L0M1N2O3P4Q5R6S7T8U9V0W1X2Y3Z4A5B6C7D8E9F0G1H2I3J4K5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0IJKL' },
+  { Nombre: 'Sergio', Rol: 'trabajador', Wallet: 'GDGK3J5M6N7P8Q9R0S1T2U3V4W5X6Y7Z8A9B0C1D2E3F4G5H6I7J8K9L0M1N2O3P4Q5R6S7T8U9V0W1X2Y3Z4A5B6C7D8E9F0G1H2I3J4K5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0MNOP' },
+  { Nombre: 'Darlinson', Rol: 'trabajador', Wallet: 'GDHK3J5M6N7P8Q9R0S1T2U3V4W5X6Y7Z8A9B0C1D2E3F4G5H6I7J8K9L0M1N2O3P4Q5R6S7T8U9V0W1X2Y3Z4A5B6C7D8E9F0G1H2I3J4K5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0QRST' },
+  { Nombre: 'Gustavo', Rol: 'trabajador', Wallet: 'GDIK3J5M6N7P8Q9R0S1T2U3V4W5X6Y7Z8A9B0C1D2E3F4G5H6I7J8K9L0M1N2O3P4Q5R6S7T8U9V0W1X2Y3Z4A5B6C7D8E9F0G1H2I3J4K5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0UVWX' },
+  { Nombre: 'Maria', Rol: 'trabajador', Wallet: 'GDJK3J5M6N7P8Q9R0S1T2U3V4W5X6Y7Z8A9B0C1D2E3F4G5H6I7J8K9L0M1N2O3P4Q5R6S7T8U9V0W1X2Y3Z4A5B6C7D8E9F0G1H2I3J4K5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0YZAB' },
+  { Nombre: 'Pedro', Rol: 'trabajador', Wallet: 'GDKK3J5M6N7P8Q9R0S1T2U3V4W5X6Y7Z8A9B0C1D2E3F4G5H6I7J8K9L0M1N2O3P4Q5R6S7T8U9V0W1X2Y3Z4A5B6C7D8E9F0G1H2I3J4K5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0CDEF' },
+  { Nombre: 'Ana', Rol: 'trabajador', Wallet: 'GDLK3J5M6N7P8Q9R0S1T2U3V4W5X6Y7Z8A9B0C1D2E3F4G5H6I7J8K9L0M1N2O3P4Q5R6S7T8U9V0W1X2Y3Z4A5B6C7D8E9F0G1H2I3J4K5L6M7N8O9P0Q1R2S3T4U5V6W7X8Y9Z0GHIJ' },
+];
+
+// Generar órdenes hardcodeadas para cada trabajador
+function generarOrdenes() {
+  const ordenes = [];
+  const trabajadores = usuarios.filter(u => u.Rol === 'trabajador');
+  const estados = ['Terminado', 'Terminado', 'Terminado', 'Empacando', 'Pending'];
+  const resultados = ['Correct', 'Correct', 'Correct', 'Issues', null];
+  
+  let ordenId = 3000;
+  const hoy = new Date();
+  
+  trabajadores.forEach((trabajador, idx) => {
+    // Cada trabajador tiene entre 15-25 órdenes
+    const numOrdenes = 15 + Math.floor(Math.random() * 11);
+    
+    for (let i = 0; i < numOrdenes; i++) {
+      const diasAtras = Math.floor(Math.random() * 30); // Últimos 30 días
+      const fecha = new Date(hoy);
+      fecha.setDate(fecha.getDate() - diasAtras);
+      
+      const cantidad = 50 + Math.floor(Math.random() * 500); // 50-550 items
+      const estado = estados[Math.floor(Math.random() * estados.length)];
+      const resultado = estado === 'Terminado' ? resultados[Math.floor(Math.random() * resultados.length)] : null;
+      
+      // Tiempos aleatorios
+      const horaInicio = 8 + Math.floor(Math.random() * 4); // 8-11 AM
+      const minInicio = Math.floor(Math.random() * 60);
+      const duracionMin = 30 + Math.floor(Math.random() * 120); // 30-150 minutos
+      
+      const fechaInicioSacado = new Date(fecha);
+      fechaInicioSacado.setHours(horaInicio, minInicio, 0);
+      
+      const fechaFinSacado = new Date(fechaInicioSacado);
+      fechaFinSacado.setMinutes(fechaFinSacado.getMinutes() + duracionMin / 2);
+      
+      const fechaInicioEmpaque = new Date(fechaFinSacado);
+      fechaInicioEmpaque.setMinutes(fechaInicioEmpaque.getMinutes() + 5);
+      
+      const fechaFinEmpaque = new Date(fechaInicioEmpaque);
+      fechaFinEmpaque.setMinutes(fechaFinEmpaque.getMinutes() + duracionMin / 2);
+      
+      // Decidir si es picker, packer o ambos
+      const otroTrabajador = trabajadores[Math.floor(Math.random() * trabajadores.length)];
+      const esPicker = Math.random() > 0.3; // 70% chance de ser picker
+      const esPacker = Math.random() > 0.3; // 70% chance de ser packer
+      
+      ordenes.push({
+        Orden: ordenId++,
+        Cantidad: cantidad,
+        Sacador: esPicker ? trabajador.Nombre : otroTrabajador.Nombre,
+        Empacador: esPacker ? trabajador.Nombre : otroTrabajador.Nombre,
+        Estado: estado,
+        FechaInicioSacado: fechaInicioSacado.toISOString(),
+        FechaFinSacado: fechaFinSacado.toISOString(),
+        FechaInicioEmpaque: fechaInicioEmpaque.toISOString(),
+        FechaFinEmpaque: fechaFinEmpaque.toISOString(),
+        Resultado: resultado
+      });
     }
-  }
-  return pool;
+  });
+  
+  return ordenes;
 }
+
+const ordenesHardcodeadas = generarOrdenes();
+
+// Función para calcular eficiencia (basada en cantidad procesada vs meta de 3000/día)
+function calcularEficiencia(cantidadTotal, diasTrabajados) {
+  if (diasTrabajados === 0) return 0;
+  const promedioDiario = cantidadTotal / diasTrabajados;
+  const eficiencia = (promedioDiario / 3000) * 100;
+  return Math.min(100, Math.max(0, Math.round(eficiencia * 10) / 10)); // Máximo 100%, mínimo 0%
+}
+
+// Función para calcular bonos (basado en eficiencia y órdenes completadas)
+function calcularBono(eficiencia, ordenesCompletadas) {
+  let bono = 0;
+  // Base: $10 USDC por orden completada
+  bono += ordenesCompletadas * 10;
+  // Bonus por eficiencia: si > 90%, +$5 por orden; si > 95%, +$10 por orden
+  if (eficiencia >= 95) {
+    bono += ordenesCompletadas * 10;
+  } else if (eficiencia >= 90) {
+    bono += ordenesCompletadas * 5;
+  }
+  return Math.round(bono);
+}
+
+// Pool de conexiones - COMENTADO
+// let pool;
+// async function getPool() {
+//   if (!pool) {
+//     try {
+//       pool = await sql.connect(dbConfig);
+//       console.log('✅ Conectado a la base de datos SQL Server');
+//       return pool;
+//     } catch (err) {
+//       console.error('❌ Error al conectar a la base de datos:', err);
+//       throw err;
+//     }
+//   }
+//   return pool;
+// }
 
 // Ruta de prueba
 app.get('/', (req, res) => {
@@ -36,9 +140,7 @@ app.get('/', (req, res) => {
 // Ruta para obtener todas las órdenes
 app.get('/api/ordenes', async (req, res) => {
   try {
-    const pool = await getPool();
-    const result = await pool.request().query('SELECT * FROM Ordenes');
-    res.json(result.recordset);
+    res.json(ordenesHardcodeadas);
   } catch (err) {
     console.error('Error al obtener órdenes:', err);
     res.status(500).json({ error: 'Error al obtener órdenes', details: err.message });
@@ -48,17 +150,14 @@ app.get('/api/ordenes', async (req, res) => {
 // Ruta para obtener una orden específica
 app.get('/api/ordenes/:id', async (req, res) => {
   try {
-    const pool = await getPool();
-    const result = await pool
-      .request()
-      .input('id', sql.SmallInt, parseInt(req.params.id))
-      .query('SELECT * FROM Ordenes WHERE Orden = @id');
+    const id = parseInt(req.params.id);
+    const orden = ordenesHardcodeadas.find(o => o.Orden === id);
     
-    if (result.recordset.length === 0) {
+    if (!orden) {
       return res.status(404).json({ error: 'Orden no encontrada' });
     }
     
-    res.json(result.recordset[0]);
+    res.json(orden);
   } catch (err) {
     console.error('Error al obtener la orden:', err);
     res.status(500).json({ error: 'Error al obtener la orden', details: err.message });
@@ -69,23 +168,19 @@ app.get('/api/ordenes/:id', async (req, res) => {
 app.patch('/api/ordenes/:id', async (req, res) => {
   try {
     const { Estado, Resultado } = req.body;
-    const pool = await getPool();
+    const id = parseInt(req.params.id);
+    const ordenIndex = ordenesHardcodeadas.findIndex(o => o.Orden === id);
     
-    let query = 'UPDATE Ordenes SET Estado = @estado';
-    const request = pool.request()
-      .input('id', sql.SmallInt, parseInt(req.params.id))
-      .input('estado', sql.NVarChar(50), Estado);
-    
-    if (Resultado) {
-      query += ', Resultado = @resultado';
-      request.input('resultado', sql.NVarChar(50), Resultado);
+    if (ordenIndex === -1) {
+      return res.status(404).json({ error: 'Orden no encontrada' });
     }
     
-    query += ' WHERE Orden = @id';
+    ordenesHardcodeadas[ordenIndex].Estado = Estado;
+    if (Resultado) {
+      ordenesHardcodeadas[ordenIndex].Resultado = Resultado;
+    }
     
-    const result = await request.query(query);
-    
-    res.json({ message: 'Orden actualizada correctamente', affectedRows: result.rowsAffected[0] });
+    res.json({ message: 'Orden actualizada correctamente', affectedRows: 1 });
   } catch (err) {
     console.error('Error al actualizar la orden:', err);
     res.status(500).json({ error: 'Error al actualizar la orden', details: err.message });
@@ -95,48 +190,54 @@ app.patch('/api/ordenes/:id', async (req, res) => {
 // Ruta para obtener métricas de operativos
 app.get('/api/metrics/operatives', async (req, res) => {
   try {
-    const pool = await getPool();
+    const trabajadores = usuarios.filter(u => u.Rol === 'trabajador');
+    const metrics = [];
     
-    // Consulta simplificada sin filtros complejos - similar a /api/ordenes
-    // Obtener todos los trabajadores únicos y sus métricas totales
-    const metricsQuery = `
-      SELECT 
-        Nombre,
-        SUM(ProductQuantity) AS ProductQuantity,
-        SUM(OrdersCompleted) AS OrdersCompleted
-      FROM (
-        SELECT 
-          Sacador AS Nombre,
-          SUM(Cantidad) AS ProductQuantity,
-          COUNT(*) AS OrdersCompleted
-        FROM Ordenes
-        WHERE Sacador IS NOT NULL
-        GROUP BY Sacador
-        
-        UNION ALL
-        
-        SELECT 
-          Empacador AS Nombre,
-          SUM(Cantidad) AS ProductQuantity,
-          COUNT(*) AS OrdersCompleted
-        FROM Ordenes
-        WHERE Empacador IS NOT NULL
-        GROUP BY Empacador
-      ) AS CombinedMetrics
-      GROUP BY Nombre
-      ORDER BY Nombre
-    `;
+    trabajadores.forEach(trabajador => {
+      // Filtrar órdenes donde el trabajador participó
+      const ordenesTrabajador = ordenesHardcodeadas.filter(
+        o => o.Sacador === trabajador.Nombre || o.Empacador === trabajador.Nombre
+      );
+      
+      // Calcular cantidad total de productos
+      let productQuantity = 0;
+      ordenesTrabajador.forEach(o => {
+        if (o.Sacador === trabajador.Nombre) productQuantity += o.Cantidad;
+        if (o.Empacador === trabajador.Nombre) productQuantity += o.Cantidad;
+      });
+      
+      // Contar órdenes completadas (Terminado)
+      const ordenesCompletadas = ordenesTrabajador.filter(
+        o => o.Estado === 'Terminado' || o.Estado === 'terminado'
+      ).length;
+      
+      // Calcular días trabajados (fechas únicas)
+      const fechasUnicas = new Set();
+      ordenesTrabajador.forEach(o => {
+        if (o.FechaFinEmpaque) {
+          const fecha = new Date(o.FechaFinEmpaque).toISOString().split('T')[0];
+          fechasUnicas.add(fecha);
+        }
+      });
+      const diasTrabajados = fechasUnicas.size || 1;
+      
+      // Calcular eficiencia
+      const eficiencia = calcularEficiencia(productQuantity, diasTrabajados);
+      
+      // Calcular bono
+      const bono = calcularBono(eficiencia, ordenesCompletadas);
+      
+      metrics.push({
+        name: trabajador.Nombre,
+        productQuantity: productQuantity,
+        completed: ordenesCompletadas,
+        efficiency: `${eficiencia}%`,
+        bonus: `${bono} USDC`
+      });
+    });
     
-    const result = await pool.request().query(metricsQuery);
-    
-    // Mapear resultados
-    const metrics = result.recordset.map(row => ({
-      name: row.Nombre,
-      productQuantity: row.ProductQuantity || 0,
-      completed: row.OrdersCompleted || 0,
-      efficiency: '0%',
-      bonus: '0 USDC'
-    }));
+    // Ordenar por nombre
+    metrics.sort((a, b) => a.name.localeCompare(b.name));
     
     res.json(metrics);
   } catch (err) {
@@ -148,30 +249,35 @@ app.get('/api/metrics/operatives', async (req, res) => {
 // Ruta para obtener órdenes de un trabajador específico con filtro de fechas
 app.get('/api/operative/ordenes/:nombre', async (req, res) => {
   try {
-    const pool = await getPool();
-    const nombre = req.params.nombre;
+    const nombre = decodeURIComponent(req.params.nombre);
     const { fechaInicio, fechaFin } = req.query;
     
-    let query = `
-      SELECT *
-      FROM Ordenes
-      WHERE (Sacador = @nombre OR Empacador = @nombre)
-    `;
+    // Filtrar órdenes del trabajador
+    let ordenes = ordenesHardcodeadas.filter(
+      o => o.Sacador === nombre || o.Empacador === nombre
+    );
     
-    const request = pool.request().input('nombre', sql.NVarChar(50), nombre);
-    
-    // Agregar filtro de fechas si se proporcionan (comparando strings ya que FechaFinEmpaque es nvarchar)
+    // Aplicar filtro de fechas si se proporcionan
     if (fechaInicio && fechaFin) {
-      query += ` AND FechaFinEmpaque BETWEEN @fechaInicio AND @fechaFin`;
-      request.input('fechaInicio', sql.NVarChar(50), fechaInicio);
-      request.input('fechaFin', sql.NVarChar(50), fechaFin);
+      const fechaInicioDate = new Date(fechaInicio);
+      const fechaFinDate = new Date(fechaFin);
+      fechaFinDate.setHours(23, 59, 59, 999);
+      
+      ordenes = ordenes.filter(o => {
+        if (!o.FechaFinEmpaque) return false;
+        const fechaOrden = new Date(o.FechaFinEmpaque);
+        return fechaOrden >= fechaInicioDate && fechaOrden <= fechaFinDate;
+      });
     }
     
-    // NO usar ORDER BY aquí - puede causar conversión implícita a fecha que falla con muchos registros
-    // Ordenaremos en el frontend si es necesario
+    // Ordenar por fecha descendente (más recientes primero)
+    ordenes.sort((a, b) => {
+      const fechaA = new Date(a.FechaFinEmpaque || 0);
+      const fechaB = new Date(b.FechaFinEmpaque || 0);
+      return fechaB - fechaA;
+    });
     
-    const result = await request.query(query);
-    res.json(result.recordset);
+    res.json(ordenes);
   } catch (err) {
     console.error('Error al obtener órdenes del trabajador:', err);
     res.status(500).json({ error: 'Error al obtener órdenes', details: err.message });
@@ -181,106 +287,63 @@ app.get('/api/operative/ordenes/:nombre', async (req, res) => {
 // Ruta para obtener datos de gráfico por trabajador y rango de fechas
 app.get('/api/operative/chart/:nombre', async (req, res) => {
   try {
-    const pool = await getPool();
-    const nombre = req.params.nombre;
+    const nombre = decodeURIComponent(req.params.nombre);
     const { fechaInicio, fechaFin } = req.query;
     
     console.log(`📊 Consultando gráfico para: ${nombre}, fechas: ${fechaInicio} - ${fechaFin}`);
     
-    // Como FechaFinEmpaque es nvarchar, obtenemos todos los registros primero
-    // y luego los procesamos en JavaScript para agrupar por fecha
-    let query = `
-      SELECT 
-        FechaFinEmpaque,
-        Cantidad
-      FROM Ordenes
-      WHERE (Sacador = @nombre OR Empacador = @nombre)
-        AND FechaFinEmpaque IS NOT NULL
-        AND FechaFinEmpaque != ''
-        AND FechaFinEmpaque != 'NULL'
-    `;
+    // Filtrar órdenes del trabajador
+    let ordenes = ordenesHardcodeadas.filter(
+      o => (o.Sacador === nombre || o.Empacador === nombre) && o.FechaFinEmpaque
+    );
     
-    const request = pool.request().input('nombre', sql.NVarChar(50), nombre);
-    
-    // Agregar filtro de fechas si se proporcionan (comparando strings directamente)
-    // NO usar funciones SQL como LEFT() o ORDER BY porque SQL Server intenta convertir a fecha implícitamente
+    // Aplicar filtro de fechas si se proporcionan
     if (fechaInicio && fechaFin) {
-      // Formatear fechas para comparación string (YYYY-MM-DD)
-      const fechaInicioStr = typeof fechaInicio === 'string' ? fechaInicio : fechaInicio;
-      const fechaFinStr = typeof fechaFin === 'string' ? fechaFin : fechaFin;
-      // Comparar strings directamente sin usar funciones SQL
-      query += ` AND FechaFinEmpaque >= @fechaInicio AND FechaFinEmpaque <= @fechaFin`;
-      request.input('fechaInicio', sql.NVarChar(50), fechaInicioStr.substring(0, 10));
-      request.input('fechaFin', sql.NVarChar(50), fechaFinStr.substring(0, 10) + ' 23:59:59');
+      const fechaInicioDate = new Date(fechaInicio);
+      const fechaFinDate = new Date(fechaFin);
+      fechaFinDate.setHours(23, 59, 59, 999);
+      
+      ordenes = ordenes.filter(o => {
+        const fechaOrden = new Date(o.FechaFinEmpaque);
+        return fechaOrden >= fechaInicioDate && fechaOrden <= fechaFinDate;
+      });
     }
     
-    // NO usar ORDER BY aquí - causa conversión implícita a fecha que falla con muchos registros
-    // Ordenaremos en JavaScript después del procesamiento (línea 265)
-    
-    const result = await request.query(query);
-    
-    console.log(`✅ Datos del gráfico obtenidos: ${result.recordset.length} registros`);
-    
-    // Agrupar por fecha en JavaScript (más seguro que en SQL)
+    // Agrupar por fecha
     const groupedByDate = {};
     
-    result.recordset.forEach(row => {
-      const fechaStr = row.FechaFinEmpaque;
-      if (!fechaStr || fechaStr === 'NULL' || fechaStr.trim() === '') return;
-      
-      // Extraer solo la parte de fecha (primeros 10 caracteres: YYYY-MM-DD)
-      let fechaKey = fechaStr.trim().substring(0, 10);
-      
-      // Si no tiene formato YYYY-MM-DD, intentar parsear
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaKey)) {
-        try {
-          const fechaParsed = new Date(fechaStr);
-          if (!isNaN(fechaParsed.getTime())) {
-            fechaKey = fechaParsed.toISOString().split('T')[0];
-          } else {
-            // Intentar formato DD/MM/YYYY o MM/DD/YYYY
-            const parts = fechaStr.split(/[/-]/);
-            if (parts.length === 3) {
-              // Asumir formato YYYY-MM-DD o intentar MM/DD/YYYY
-              if (parts[0].length === 4) {
-                fechaKey = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-              } else {
-                fechaKey = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-              }
-            }
-          }
-        } catch (e) {
-          console.warn('Error parseando fecha:', fechaStr, e);
-          return; // Saltar este registro
-        }
-      }
+    ordenes.forEach(orden => {
+      const fecha = new Date(orden.FechaFinEmpaque);
+      const fechaKey = fecha.toISOString().split('T')[0]; // YYYY-MM-DD
       
       if (!groupedByDate[fechaKey]) {
         groupedByDate[fechaKey] = { cantidad: 0, ordenes: 0 };
       }
       
-      groupedByDate[fechaKey].cantidad += Number(row.Cantidad) || 0;
+      // Sumar cantidad si el trabajador participó
+      if (orden.Sacador === nombre) {
+        groupedByDate[fechaKey].cantidad += orden.Cantidad;
+      }
+      if (orden.Empacador === nombre) {
+        groupedByDate[fechaKey].cantidad += orden.Cantidad;
+      }
       groupedByDate[fechaKey].ordenes += 1;
     });
     
     // Convertir a array y formatear
     const formatted = Object.keys(groupedByDate)
       .sort() // Ordenar por fecha
-      .map(fechaKey => {
-        const data = groupedByDate[fechaKey];
-        return {
-          Fecha: fechaKey,
-          Cantidad: data.cantidad,
-          Ordenes: data.ordenes,
-          FechaParsed: fechaKey
-        };
-      });
+      .map(fechaKey => ({
+        Fecha: fechaKey,
+        Cantidad: groupedByDate[fechaKey].cantidad,
+        Ordenes: groupedByDate[fechaKey].ordenes,
+        FechaParsed: fechaKey
+      }));
     
     console.log(`✅ Datos agrupados: ${formatted.length} fechas únicas`);
     res.json(formatted);
   } catch (err) {
     console.error('❌ Error al obtener datos del gráfico:', err);
-    console.error('Stack:', err.stack);
     res.status(500).json({ error: 'Error al obtener datos del gráfico', details: err.message });
   }
 });
@@ -288,30 +351,20 @@ app.get('/api/operative/chart/:nombre', async (req, res) => {
 // Ruta para autenticar por wallet y obtener rol
 app.get('/api/auth/wallet/:wallet', async (req, res) => {
   try {
-    const pool = await getPool();
-    const wallet = req.params.wallet;
+    const wallet = decodeURIComponent(req.params.wallet);
     
     console.log(`🔐 Autenticando wallet: ${wallet}`);
     
-    const query = `
-      SELECT Nombre, Rol, Wallet
-      FROM Usuario
-      WHERE Wallet = @wallet
-    `;
+    const usuario = usuarios.find(u => u.Wallet === wallet);
     
-    const result = await pool.request()
-      .input('wallet', sql.NVarChar(100), wallet)
-      .query(query);
-    
-    if (result.recordset.length === 0) {
+    if (!usuario) {
       return res.status(404).json({ error: 'Wallet no encontrada en la base de datos' });
     }
     
-    const user = result.recordset[0];
     res.json({
-      nombre: user.Nombre,
-      rol: user.Rol.toLowerCase(), // "lider" o "trabajador"
-      wallet: user.Wallet
+      nombre: usuario.Nombre,
+      rol: usuario.Rol.toLowerCase(), // "lider" o "trabajador"
+      wallet: usuario.Wallet
     });
   } catch (err) {
     console.error('❌ Error al autenticar wallet:', err);
@@ -319,23 +372,65 @@ app.get('/api/auth/wallet/:wallet', async (req, res) => {
   }
 });
 
-// Iniciar servidor
-app.listen(PORT, async () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  // Conectar a la base de datos al iniciar
+// Ruta para obtener métricas de un trabajador específico
+app.get('/api/operative/metrics/:nombre', async (req, res) => {
   try {
-    await getPool();
+    const nombre = decodeURIComponent(req.params.nombre);
+    
+    // Filtrar órdenes del trabajador
+    const ordenesTrabajador = ordenesHardcodeadas.filter(
+      o => o.Sacador === nombre || o.Empacador === nombre
+    );
+    
+    // Calcular cantidad total de productos
+    let productQuantity = 0;
+    ordenesTrabajador.forEach(o => {
+      if (o.Sacador === nombre) productQuantity += o.Cantidad;
+      if (o.Empacador === nombre) productQuantity += o.Cantidad;
+    });
+    
+    // Contar órdenes completadas
+    const ordenesCompletadas = ordenesTrabajador.filter(
+      o => o.Estado === 'Terminado' || o.Estado === 'terminado'
+    ).length;
+    
+    // Calcular días trabajados
+    const fechasUnicas = new Set();
+    ordenesTrabajador.forEach(o => {
+      if (o.FechaFinEmpaque) {
+        const fecha = new Date(o.FechaFinEmpaque).toISOString().split('T')[0];
+        fechasUnicas.add(fecha);
+      }
+    });
+    const diasTrabajados = fechasUnicas.size || 1;
+    
+    // Calcular eficiencia
+    const eficiencia = calcularEficiencia(productQuantity, diasTrabajados);
+    
+    // Calcular bono
+    const bono = calcularBono(eficiencia, ordenesCompletadas);
+    
+    res.json({
+      productQuantity: productQuantity,
+      completed: ordenesCompletadas,
+      efficiency: `${eficiencia}%`,
+      bonus: `${bono} USDC`
+    });
   } catch (err) {
-    console.error('No se pudo conectar a la base de datos al iniciar:', err);
+    console.error('Error al obtener métricas del trabajador:', err);
+    res.status(500).json({ error: 'Error al obtener métricas', details: err.message });
   }
 });
 
+// Iniciar servidor
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`📊 Datos hardcodeados: ${ordenesHardcodeadas.length} órdenes, ${usuarios.length} usuarios`);
+  console.log(`👥 Trabajadores: ${usuarios.filter(u => u.Rol === 'trabajador').length}, Líderes: ${usuarios.filter(u => u.Rol === 'lider').length}`);
+});
+
 // Manejo de cierre graceful
-process.on('SIGINT', async () => {
+process.on('SIGINT', () => {
   console.log('\n🛑 Cerrando servidor...');
-  if (pool) {
-    await pool.close();
-    console.log('✅ Conexión a la base de datos cerrada');
-  }
   process.exit(0);
 });
