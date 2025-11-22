@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Clock,
   DollarSign,
+  Plus,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,6 +24,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine } from "recharts"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 // Interfaz para los datos de la base de datos
 interface OrderFromDB {
@@ -138,6 +141,13 @@ interface LeaderDashboardProps {
 
 const API_URL = "http://localhost:3001"
 
+interface Worker {
+  name: string
+  lastname: string
+  id: string
+  wallet: string
+}
+
 export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
   const [activeTab, setActiveTab] = useState("activities")
   const [orders, setOrders] = useState<ProcessedOrder[]>([])
@@ -149,6 +159,14 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
   const [fechaInicio, setFechaInicio] = useState<string>("")
   const [fechaFin, setFechaFin] = useState<string>("")
   const [loadingWorkerData, setLoadingWorkerData] = useState(false)
+  const [workers, setWorkers] = useState<Worker[]>([])
+  const [isAddWorkerDialogOpen, setIsAddWorkerDialogOpen] = useState(false)
+  const [newWorker, setNewWorker] = useState({
+    name: "",
+    lastname: "",
+    id: "",
+    wallet: ""
+  })
 
   // Cargar órdenes desde la API
   useEffect(() => {
@@ -210,6 +228,35 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
 
     if (activeTab === "metrics") {
       fetchMetrics()
+    }
+  }, [activeTab])
+
+  // Cargar trabajadores cuando se abre la pestaña Workers
+  useEffect(() => {
+    if (activeTab === "workers") {
+      const fetchWorkers = async () => {
+        try {
+          console.log('🔄 Cargando trabajadores desde:', `${API_URL}/api/workers`)
+          const response = await fetch(`${API_URL}/api/workers`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+          if (response.ok) {
+            const workersData = await response.json()
+            console.log('✅ Trabajadores recibidos:', workersData.length, workersData)
+            setWorkers(workersData)
+          } else {
+            console.error('❌ Error al cargar trabajadores:', response.status, response.statusText)
+            const errorText = await response.text()
+            console.error('Error details:', errorText)
+          }
+        } catch (error) {
+          console.error("❌ Error loading workers:", error)
+        }
+      }
+      fetchWorkers()
     }
   }, [activeTab])
 
@@ -411,9 +458,13 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
             <TrendingUp className="mr-2 h-4 w-4" />
             Metrics
           </Button>
-          <Button variant="ghost" className="w-full justify-start">
+          <Button
+            variant={activeTab === "workers" ? "secondary" : "ghost"}
+            className="w-full justify-start"
+            onClick={() => setActiveTab("workers")}
+          >
             <Users className="mr-2 h-4 w-4" />
-            Operatives
+            Workers
           </Button>
           <Button variant="ghost" className="w-full justify-start">
             <Settings className="mr-2 h-4 w-4" />
@@ -591,7 +642,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                 </CardContent>
               </Card>
             </div>
-          ) : (
+          ) : activeTab === "metrics" ? (
             <div className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <Card>
@@ -896,7 +947,167 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                 </div>
               )}
             </div>
-          )}
+          ) : activeTab === "workers" ? (
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Workers Management</CardTitle>
+                      <CardDescription>Manage your team of workers</CardDescription>
+                    </div>
+                    <Dialog open={isAddWorkerDialogOpen} onOpenChange={setIsAddWorkerDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Worker
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add New Worker</DialogTitle>
+                          <DialogDescription>
+                            Enter the worker's information to add them to the system.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <form
+                          onSubmit={async (e) => {
+                            e.preventDefault()
+                            try {
+                              const response = await fetch(`${API_URL}/api/workers`, {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                  nombre: `${newWorker.name} ${newWorker.lastname}`,
+                                  id: newWorker.id,
+                                  wallet: newWorker.wallet,
+                                  rol: 'trabajador'
+                                }),
+                              })
+                              
+                              if (!response.ok) {
+                                throw new Error("Error adding worker")
+                              }
+                              
+                              await response.json()
+                              
+                              // Recargar la lista completa de trabajadores desde el servidor
+                              const workersResponse = await fetch(`${API_URL}/api/workers`)
+                              if (workersResponse.ok) {
+                                const workersData = await workersResponse.json()
+                                setWorkers(workersData)
+                              }
+                              
+                              // Reset form
+                              setNewWorker({ name: "", lastname: "", id: "", wallet: "" })
+                              setIsAddWorkerDialogOpen(false)
+                              
+                              // Refresh metrics to include new worker
+                              const metricsResponse = await fetch(`${API_URL}/api/metrics/operatives`)
+                              if (metricsResponse.ok) {
+                                const metrics = await metricsResponse.json()
+                                setOperativeMetrics(metrics)
+                              }
+                            } catch (error) {
+                              console.error("Error adding worker:", error)
+                              alert("Error adding worker. Please try again.")
+                            }
+                          }}
+                          className="space-y-4"
+                        >
+                          <div className="space-y-2">
+                            <Label htmlFor="name">Name</Label>
+                            <Input
+                              id="name"
+                              value={newWorker.name}
+                              onChange={(e) => setNewWorker({ ...newWorker, name: e.target.value })}
+                              required
+                              placeholder="Enter worker's name"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="lastname">Last Name</Label>
+                            <Input
+                              id="lastname"
+                              value={newWorker.lastname}
+                              onChange={(e) => setNewWorker({ ...newWorker, lastname: e.target.value })}
+                              required
+                              placeholder="Enter worker's last name"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="id">ID</Label>
+                            <Input
+                              id="id"
+                              value={newWorker.id}
+                              onChange={(e) => setNewWorker({ ...newWorker, id: e.target.value })}
+                              required
+                              placeholder="Enter worker's ID"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="wallet">Wallet</Label>
+                            <Input
+                              id="wallet"
+                              value={newWorker.wallet}
+                              onChange={(e) => setNewWorker({ ...newWorker, wallet: e.target.value })}
+                              required
+                              placeholder="Enter worker's wallet address"
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setIsAddWorkerDialogOpen(false)
+                                setNewWorker({ name: "", lastname: "", id: "", wallet: "" })
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button type="submit">Add Worker</Button>
+                          </div>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {workers.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground mb-4">No workers added yet</p>
+                      <p className="text-sm text-muted-foreground">Click "Add Worker" to get started</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Last Name</TableHead>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Wallet</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {workers.map((worker, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{worker.name}</TableCell>
+                            <TableCell>{worker.lastname}</TableCell>
+                            <TableCell>{worker.id}</TableCell>
+                            <TableCell className="font-mono text-sm">{worker.wallet}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ) : null}
         </div>
       </main>
     </div>

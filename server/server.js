@@ -422,6 +422,88 @@ app.get('/api/operative/metrics/:nombre', async (req, res) => {
   }
 });
 
+// Ruta para obtener todos los trabajadores
+app.get('/api/workers', async (req, res) => {
+  try {
+    console.log('📋 Obteniendo lista de trabajadores...');
+    const trabajadores = usuarios.filter(u => u.Rol === 'trabajador');
+    console.log(`✅ Encontrados ${trabajadores.length} trabajadores`);
+    
+    // Formatear para incluir name, lastname, id, wallet
+    const workersFormatted = trabajadores.map(user => {
+      // Separar nombre completo en name y lastname
+      const nameParts = user.Nombre.split(' ');
+      const name = nameParts[0] || user.Nombre;
+      const lastname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+      
+      // Generar un ID único basado en el wallet (primeros 12 caracteres)
+      const id = user.Wallet.substring(0, 12).toUpperCase();
+      
+      return {
+        name: name,
+        lastname: lastname,
+        id: id,
+        wallet: user.Wallet
+      };
+    });
+    
+    console.log('📤 Enviando trabajadores:', workersFormatted.length);
+    res.json(workersFormatted);
+  } catch (err) {
+    console.error('❌ Error getting workers:', err);
+    res.status(500).json({ error: 'Error getting workers', details: err.message });
+  }
+});
+
+// Ruta para agregar un nuevo trabajador
+app.post('/api/workers', async (req, res) => {
+  try {
+    const { nombre, id, wallet, rol } = req.body;
+    
+    if (!nombre || !id || !wallet) {
+      return res.status(400).json({ error: 'Name, ID, and Wallet are required' });
+    }
+    
+    // Verificar si el wallet ya existe
+    const existingUser = usuarios.find(u => u.Wallet === wallet);
+    if (existingUser) {
+      return res.status(400).json({ error: 'Wallet already exists' });
+    }
+    
+    // Verificar si el ID ya existe (opcional, puedes validar esto si quieres)
+    
+    // Agregar nuevo usuario al array
+    const newUser = {
+      Nombre: nombre,
+      Rol: rol || 'trabajador',
+      Wallet: wallet
+    };
+    
+    usuarios.push(newUser);
+    
+    console.log(`✅ Nuevo trabajador agregado: ${nombre} (${wallet})`);
+    
+    // Formatear respuesta igual que GET
+    const nameParts = nombre.split(' ');
+    const name = nameParts[0] || nombre;
+    const lastname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+    const workerId = id || wallet.substring(0, 12).toUpperCase();
+    
+    res.json({
+      message: 'Worker added successfully',
+      worker: {
+        name: name,
+        lastname: lastname,
+        id: workerId,
+        wallet: wallet
+      }
+    });
+  } catch (err) {
+    console.error('Error adding worker:', err);
+    res.status(500).json({ error: 'Error adding worker', details: err.message });
+  }
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
