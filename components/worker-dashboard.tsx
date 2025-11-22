@@ -277,7 +277,7 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
       <aside className="hidden w-64 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
         <div className="flex h-16 items-center border-b px-6">
           <Target className="mr-2 h-6 w-6 text-accent-foreground" />
-          <span className="text-lg font-bold">Worker Portal</span>
+          <span className="text-lg font-bold">Harmony</span>
         </div>
         <nav className="flex-1 space-y-1 p-4">
           <Button
