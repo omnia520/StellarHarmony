@@ -16,13 +16,16 @@ import {
   TrendingUp,
   Clock,
   DollarSign,
+  Plus,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine } from "recharts"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 // Interfaz para los datos de la base de datos
 interface OrderFromDB {
@@ -31,10 +34,11 @@ interface OrderFromDB {
   Sacador: string | null
   Empacador: string | null
   Estado: string
-  FechalnicioSacado: string | null
+  FechaInicioSacado: string | null
   FechaFinSacado: string | null
-  FechalnicioEmpaque: string | null
+  FechaInicioEmpaque: string | null
   FechaFinEmpaque: string | null
+  Resultado: string | null
 }
 
 // Interfaz para los datos procesados de la orden
@@ -54,8 +58,8 @@ function calculateTime(order: OrderFromDB): string {
   let totalMinutes = 0
 
   // Calcular diferencia entre FechaFinSacado - FechaInicioSacado
-  if (order.FechalnicioSacado && order.FechaFinSacado) {
-    const inicioSacado = new Date(order.FechalnicioSacado)
+  if (order.FechaInicioSacado && order.FechaFinSacado) {
+    const inicioSacado = new Date(order.FechaInicioSacado)
     const finSacado = new Date(order.FechaFinSacado)
     if (!isNaN(inicioSacado.getTime()) && !isNaN(finSacado.getTime())) {
       const diffSacado = (finSacado.getTime() - inicioSacado.getTime()) / (1000 * 60)
@@ -64,8 +68,8 @@ function calculateTime(order: OrderFromDB): string {
   }
 
   // Calcular diferencia entre FechaFinEmpaque - FechaInicioEmpaque
-  if (order.FechalnicioEmpaque && order.FechaFinEmpaque) {
-    const inicioEmpaque = new Date(order.FechalnicioEmpaque)
+  if (order.FechaInicioEmpaque && order.FechaFinEmpaque) {
+    const inicioEmpaque = new Date(order.FechaInicioEmpaque)
     const finEmpaque = new Date(order.FechaFinEmpaque)
     if (!isNaN(inicioEmpaque.getTime()) && !isNaN(finEmpaque.getTime())) {
       const diffEmpaque = (finEmpaque.getTime() - inicioEmpaque.getTime()) / (1000 * 60)
@@ -97,76 +101,21 @@ function processOrders(ordersFromDB: OrderFromDB[]): ProcessedOrder[] {
       time,
     }
 
-    // Si el estado es "Reviewed", determinar el resultado basado en algún criterio
-    // Por ahora, asumimos que si está Reviewed, necesitamos un campo adicional para el resultado
-    // Esto se puede ajustar según la lógica de negocio
-    if (order.Estado === "Reviewed") {
-      // Aquí puedes agregar lógica para determinar si es Correct, Issues o Rejected
-      // Por ahora, lo dejamos como undefined y se mostrará basado en el estado
+    // Si el estado es "Reviewed" y hay un resultado, mapearlo
+    if (order.Estado === "Reviewed" && order.Resultado) {
+      const resultado = order.Resultado.toLowerCase()
+      if (resultado === "correct") {
+        processed.result = "Correct"
+      } else if (resultado === "issues") {
+        processed.result = "Issues"
+      } else if (resultado === "rejected") {
+        processed.result = "Rejected"
+      }
     }
 
     return processed
   })
 }
-
-// Mock Data - Estructura de la base de datos
-const mockOrdersFromDB: OrderFromDB[] = [
-  {
-    Orden: 7829,
-    Cantidad: 12,
-    Sacador: "Alex Chen",
-    Empacador: "Sarah Jones",
-    Estado: "Pending",
-    FechalnicioSacado: "2023-11-20T10:00:00",
-    FechaFinSacado: "2023-11-20T10:12:00",
-    FechalnicioEmpaque: "2023-11-20T10:12:00",
-    FechaFinEmpaque: "2023-11-20T10:26:00",
-  },
-  {
-    Orden: 7830,
-    Cantidad: 8,
-    Sacador: "Mike Ross",
-    Empacador: "Lisa Wong",
-    Estado: "Pending",
-    FechalnicioSacado: "2023-11-20T11:00:00",
-    FechaFinSacado: "2023-11-20T11:07:00",
-    FechalnicioEmpaque: "2023-11-20T11:07:00",
-    FechaFinEmpaque: "2023-11-20T11:16:00",
-  },
-  {
-    Orden: 7831,
-    Cantidad: 24,
-    Sacador: "Alex Chen",
-    Empacador: "Mike Ross",
-    Estado: "Pending",
-    FechalnicioSacado: "2023-11-20T12:00:00",
-    FechaFinSacado: "2023-11-20T12:18:00",
-    FechalnicioEmpaque: "2023-11-20T12:18:00",
-    FechaFinEmpaque: "2023-11-20T12:40:00",
-  },
-  {
-    Orden: 7832,
-    Cantidad: 15,
-    Sacador: "Sarah Jones",
-    Empacador: "Alex Chen",
-    Estado: "Reviewed",
-    FechalnicioSacado: "2023-11-19T09:00:00",
-    FechaFinSacado: "2023-11-19T09:11:00",
-    FechalnicioEmpaque: "2023-11-19T09:11:00",
-    FechaFinEmpaque: "2023-11-19T09:27:00",
-  },
-  {
-    Orden: 7833,
-    Cantidad: 5,
-    Sacador: "Lisa Wong",
-    Empacador: "Sarah Jones",
-    Estado: "Reviewed",
-    FechalnicioSacado: "2023-11-19T14:00:00",
-    FechaFinSacado: "2023-11-19T14:04:00",
-    FechalnicioEmpaque: "2023-11-19T14:04:00",
-    FechaFinEmpaque: "2023-11-19T14:16:00",
-  },
-]
 
 const performanceData = [
   { name: "Mon", efficiency: 92, volume: 145 },
@@ -178,56 +127,307 @@ const performanceData = [
   { name: "Sun", efficiency: 90, volume: 110 },
 ]
 
-const operativeMetrics = [
-  { name: "Alex Chen", completed: 145, productQuantity: 1240, efficiency: "96%", bonus: "450 USDC" },
-  { name: "Sarah Jones", completed: 132, productQuantity: 1080, efficiency: "92%", bonus: "380 USDC" },
-  { name: "Mike Ross", completed: 156, productQuantity: 1420, efficiency: "98%", bonus: "520 USDC" },
-  { name: "Lisa Wong", completed: 128, productQuantity: 980, efficiency: "91%", bonus: "350 USDC" },
-]
+interface OperativeMetric {
+  name: string
+  completed: number
+  productQuantity: number
+  efficiency: string
+  bonus: string
+}
 
 interface LeaderDashboardProps {
   onLogout: () => void
 }
 
+const API_URL = "http://localhost:3001"
+
+interface Worker {
+  name: string
+  lastname: string
+  id: string
+  wallet: string
+}
+
 export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
   const [activeTab, setActiveTab] = useState("activities")
   const [orders, setOrders] = useState<ProcessedOrder[]>([])
+  const [operativeMetrics, setOperativeMetrics] = useState<OperativeMetric[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedWorker, setSelectedWorker] = useState<string | null>(null)
+  const [workerOrders, setWorkerOrders] = useState<ProcessedOrder[]>([])
+  const [chartData, setChartData] = useState<any[]>([])
+  const [fechaInicio, setFechaInicio] = useState<string>("")
+  const [fechaFin, setFechaFin] = useState<string>("")
+  const [loadingWorkerData, setLoadingWorkerData] = useState(false)
+  const [workers, setWorkers] = useState<Worker[]>([])
+  const [isAddWorkerDialogOpen, setIsAddWorkerDialogOpen] = useState(false)
+  const [newWorker, setNewWorker] = useState({
+    name: "",
+    lastname: "",
+    id: "",
+    wallet: ""
+  })
 
-  // Cargar y procesar órdenes
+  // Cargar órdenes desde la API
   useEffect(() => {
-    // Aquí se conectaría a la API/BD real
-    // Por ahora usamos datos mock
-    const processed = processOrders(mockOrdersFromDB)
-    setOrders(processed)
+    const fetchOrders = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch(`${API_URL}/api/ordenes`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        if (!response.ok) {
+          throw new Error(`Error loading orders: ${response.status} ${response.statusText}`)
+        }
+        const data: OrderFromDB[] = await response.json()
+        const processed = processOrders(data)
+        setOrders(processed)
+      } catch (error) {
+        console.error("Error loading orders:", error)
+        // En caso de error, dejar el array vacío
+        setOrders([])
+        // Mostrar mensaje de error más descriptivo
+        if (error instanceof Error) {
+          console.error("Error details:", error.message)
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrders()
   }, [])
 
-  // Función para actualizar el estado de una orden
-  const handleOrderAction = (orderId: number, action: "Correct" | "Issues" | "Rejected") => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) => {
-        if (order.id === orderId) {
-          return {
-            ...order,
-            status: "Reviewed",
-            result: action,
-          }
+  // Cargar métricas de operativos
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/metrics/operatives`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        if (!response.ok) {
+          throw new Error(`Error loading metrics: ${response.status} ${response.statusText}`)
         }
-        return order
+        const data: OperativeMetric[] = await response.json()
+        setOperativeMetrics(data)
+      } catch (error) {
+        console.error("Error loading metrics:", error)
+        // En caso de error, usar datos vacíos
+        setOperativeMetrics([])
+        if (error instanceof Error) {
+          console.error("Error details:", error.message)
+        }
+      }
+    }
+
+    if (activeTab === "metrics") {
+      fetchMetrics()
+    }
+  }, [activeTab])
+
+  // Cargar trabajadores cuando se abre la pestaña Workers
+  useEffect(() => {
+    if (activeTab === "workers") {
+      const fetchWorkers = async () => {
+        try {
+          console.log('🔄 Cargando trabajadores desde:', `${API_URL}/api/workers`)
+          const response = await fetch(`${API_URL}/api/workers`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+          if (response.ok) {
+            const workersData = await response.json()
+            console.log('✅ Trabajadores recibidos:', workersData.length, workersData)
+            setWorkers(workersData)
+          } else {
+            console.error('❌ Error al cargar trabajadores:', response.status, response.statusText)
+            const errorText = await response.text()
+            console.error('Error details:', errorText)
+          }
+        } catch (error) {
+          console.error("❌ Error loading workers:", error)
+        }
+      }
+      fetchWorkers()
+    }
+  }, [activeTab])
+
+  // Cargar datos del trabajador seleccionado
+  useEffect(() => {
+    if (!selectedWorker) {
+      console.log('❌ No hay trabajador seleccionado')
+      setWorkerOrders([])
+      setChartData([])
+      return
+    }
+
+    console.log('🔄 Cargando datos para trabajador:', selectedWorker)
+
+    const fetchWorkerData = async () => {
+      setLoadingWorkerData(true)
+      try {
+        // Construir query params para fechas
+        const params = new URLSearchParams()
+        if (fechaInicio) params.append('fechaInicio', fechaInicio)
+        if (fechaFin) params.append('fechaFin', fechaFin)
+        
+        const queryString = params.toString()
+        const url = `${API_URL}/api/operative/ordenes/${encodeURIComponent(selectedWorker)}${queryString ? `?${queryString}` : ''}`
+        
+        console.log('📡 Cargando órdenes desde:', url)
+        
+        // Cargar órdenes
+        const ordersResponse = await fetch(url)
+        if (ordersResponse.ok) {
+          const ordersData: OrderFromDB[] = await ordersResponse.json()
+          console.log('✅ Órdenes recibidas:', ordersData.length)
+          const processed = processOrders(ordersData)
+          setWorkerOrders(processed)
+          console.log('✅ Órdenes procesadas:', processed.length)
+        } else {
+          console.error('❌ Error al cargar órdenes:', ordersResponse.status, await ordersResponse.text())
+        }
+
+        // Cargar datos del gráfico
+        const chartUrl = `${API_URL}/api/operative/chart/${encodeURIComponent(selectedWorker)}${queryString ? `?${queryString}` : ''}`
+        const chartResponse = await fetch(chartUrl)
+        if (chartResponse.ok) {
+          const chartDataRaw = await chartResponse.json()
+          console.log('📊 Datos del gráfico recibidos:', chartDataRaw)
+          
+          // Formatear datos para el gráfico
+          const formatted = chartDataRaw.map((item: any) => {
+            // El servidor ya devuelve FechaParsed en formato YYYY-MM-DD
+            let fechaStr = item.FechaParsed || item.Fecha || ''
+            let fecha: Date | null = null
+            
+            // Parsear la fecha (ya viene en formato YYYY-MM-DD del servidor)
+            if (fechaStr) {
+              try {
+                // Intentar parsear como YYYY-MM-DD
+                const dateParts = fechaStr.split(/[-/]/)
+                if (dateParts.length === 3) {
+                  // Si el primer elemento tiene 4 dígitos, es YYYY-MM-DD
+                  if (dateParts[0].length === 4) {
+                    fecha = new Date(`${dateParts[0]}-${dateParts[1].padStart(2, '0')}-${dateParts[2].padStart(2, '0')}`)
+                  } else {
+                    // Si no, puede ser DD/MM/YYYY
+                    fecha = new Date(`${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`)
+                  }
+                } else {
+                  fecha = new Date(fechaStr)
+                }
+                
+                if (isNaN(fecha.getTime())) {
+                  fecha = null
+                }
+              } catch (e) {
+                console.warn('Error parseando fecha:', fechaStr, e)
+                fecha = null
+              }
+            }
+            
+            // Formatear fecha para mostrar en el eje X
+            const fechaFormateada = fecha && !isNaN(fecha.getTime())
+              ? fecha.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+              : fechaStr.substring(0, 10) || 'No date'
+            
+            return {
+              fecha: fechaFormateada,
+              cantidad: Number(item.Cantidad) || 0,
+              ordenes: Number(item.Ordenes) || 0,
+              fechaKey: fechaStr.substring(0, 10), // Para ordenamiento
+            }
+          }).sort((a: any, b: any) => {
+            // Ordenar por fecha
+            if (a.fechaKey && b.fechaKey) {
+              return a.fechaKey.localeCompare(b.fechaKey)
+            }
+            return 0
+          }).map((item: any) => ({
+            fecha: item.fecha,
+            cantidad: item.cantidad,
+            ordenes: item.ordenes,
+          }))
+          
+          console.log('✅ Datos formateados:', formatted)
+          setChartData(formatted)
+        } else {
+          console.error('❌ Error al cargar gráfico:', chartResponse.status, await chartResponse.text())
+        }
+      } catch (error) {
+        console.error("Error al cargar datos del trabajador:", error)
+        setWorkerOrders([])
+        setChartData([])
+      } finally {
+        setLoadingWorkerData(false)
+      }
+    }
+
+    fetchWorkerData()
+  }, [selectedWorker, fechaInicio, fechaFin])
+
+  // Función para actualizar el estado de una orden
+  const handleOrderAction = async (orderId: number, action: "Correct" | "Issues" | "Rejected") => {
+    try {
+      // Mapear la acción al resultado
+      const resultadoMap = {
+        Correct: "Correct",
+        Issues: "Issues",
+        Rejected: "Rejected",
+      }
+
+      const response = await fetch(`${API_URL}/api/ordenes/${orderId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          Estado: "Reviewed",
+          Resultado: resultadoMap[action],
+        }),
       })
-    )
+
+      if (!response.ok) throw new Error("Error updating order")
+
+      // Actualizar el estado local
+      setOrders((prevOrders) =>
+        prevOrders.map((order) => {
+          if (order.id === orderId) {
+            return {
+              ...order,
+              status: "Reviewed",
+              result: action,
+            }
+          }
+          return order
+        })
+      )
+    } catch (error) {
+      console.error("Error updating order:", error)
+      alert("Error updating order. Please try again.")
+    }
   }
 
   // Calcular órdenes pendientes
   const pendingOrdersCount = orders.filter((order) => order.status === "Pending").length
 
-  // Calcular Daily Efficiency (placeholder - se implementará mañana)
+  // Calcular Daily Efficiency (placeholder - se implementará en la tarde)
   const calculateDailyEfficiency = (): string => {
     // TODO: Calcular basado en promedio de tiempo histórico
     // Por ahora retornamos un valor placeholder
     const reviewedOrders = orders.filter((order) => order.status === "Reviewed")
     if (reviewedOrders.length === 0) return "0%"
     
-    // Lógica temporal - se ajustará mañana
+    // Lógica temporal - se ajustará en la tarde
     return "94.2%"
   }
 
@@ -239,7 +439,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
       <aside className="hidden w-64 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
         <div className="flex h-16 items-center border-b px-6">
           <Package className="mr-2 h-6 w-6 text-accent-foreground" />
-          <span className="text-lg font-bold">StellarLogistics</span>
+          <span className="text-lg font-bold">Harmony</span>
         </div>
         <nav className="flex-1 space-y-1 p-4">
           <Button
@@ -258,9 +458,13 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
             <TrendingUp className="mr-2 h-4 w-4" />
             Metrics
           </Button>
-          <Button variant="ghost" className="w-full justify-start">
+          <Button
+            variant={activeTab === "workers" ? "secondary" : "ghost"}
+            className="w-full justify-start"
+            onClick={() => setActiveTab("workers")}
+          >
             <Users className="mr-2 h-4 w-4" />
-            Operatives
+            Workers
           </Button>
           <Button variant="ghost" className="w-full justify-start">
             <Settings className="mr-2 h-4 w-4" />
@@ -351,21 +555,30 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>OrdenID</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Picker</TableHead>
-                        <TableHead>Packer</TableHead>
-                        <TableHead>Item</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {orders.map((order) => (
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <p className="text-muted-foreground">Cargando órdenes...</p>
+                    </div>
+                  ) : orders.length === 0 ? (
+                    <div className="flex items-center justify-center py-8">
+                      <p className="text-muted-foreground">No orders available</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>OrdenID</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Picker</TableHead>
+                          <TableHead>Packer</TableHead>
+                          <TableHead>Item</TableHead>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {orders.map((order) => (
                         <TableRow key={order.id}>
                           <TableCell className="font-medium">{order.id}</TableCell>
                           <TableCell>{order.date}</TableCell>
@@ -423,12 +636,13 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                           </TableCell>
                         </TableRow>
                       ))}
-                    </TableBody>
-                  </Table>
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </div>
-          ) : (
+          ) : activeTab === "metrics" ? (
             <div className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <Card>
@@ -516,21 +730,384 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {operativeMetrics.map((metric) => (
-                        <TableRow key={metric.name}>
-                          <TableCell className="font-medium">{metric.name}</TableCell>
-                          <TableCell>{metric.completed}</TableCell>
-                          <TableCell>{metric.productQuantity}</TableCell>
-                          <TableCell>{metric.efficiency}</TableCell>
-                          <TableCell className="text-right font-mono">{metric.bonus}</TableCell>
+                      {operativeMetrics.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                            No metrics available
+                          </TableCell>
                         </TableRow>
-                      ))}
+                      ) : (
+                        operativeMetrics.map((metric) => (
+                          <TableRow 
+                            key={metric.name}
+                            className={`cursor-pointer hover:bg-muted/50 transition-colors ${selectedWorker === metric.name ? 'bg-muted' : ''}`}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              console.log('👤 Trabajador seleccionado:', metric.name)
+                              setSelectedWorker(metric.name)
+                              // Scroll hacia la sección del trabajador
+                              setTimeout(() => {
+                                const element = document.getElementById('worker-details')
+                                if (element) {
+                                  element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                }
+                              }, 100)
+                            }}
+                          >
+                            <TableCell className="font-medium">{metric.name}</TableCell>
+                            <TableCell>{metric.completed}</TableCell>
+                            <TableCell>{metric.productQuantity}</TableCell>
+                            <TableCell>{metric.efficiency}</TableCell>
+                            <TableCell className="text-right font-mono">{metric.bonus}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>
               </Card>
+
+              {/* Sección de trabajador seleccionado */}
+              {selectedWorker && (
+                <div id="worker-details" className="space-y-6 mt-6 border-t pt-6">
+                  {/* Filtros de fecha - Simple sin título */}
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex gap-4 items-end">
+                        <div className="flex-1">
+                          <label className="text-sm font-medium mb-2 block">Start Date</label>
+                          <Input
+                            type="date"
+                            value={fechaInicio}
+                            onChange={(e) => setFechaInicio(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-sm font-medium mb-2 block">End Date</label>
+                          <Input
+                            type="date"
+                            value={fechaFin}
+                            onChange={(e) => setFechaFin(e.target.value)}
+                            min={fechaInicio}
+                          />
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setFechaInicio("")
+                            setFechaFin("")
+                          }}
+                        >
+                          Clear Filters
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Gráfico de desempeño - Sin título */}
+                  <Card>
+                    <CardContent className="pt-6">
+                      {loadingWorkerData ? (
+                        <div className="flex items-center justify-center" style={{ minHeight: '400px' }}>
+                          <p className="text-muted-foreground">Loading chart data...</p>
+                        </div>
+                      ) : chartData.length === 0 ? (
+                        <div className="flex items-center justify-center" style={{ minHeight: '400px' }}>
+                          <p className="text-muted-foreground">
+                            No data available{fechaInicio || fechaFin ? ' for the selected date range' : ''}
+                          </p>
+                        </div>
+                      ) : (
+                        <div style={{ width: '100%', height: '400px', minHeight: '400px' }}>
+                          <ResponsiveContainer width="100%" height="100%" minHeight={400}>
+                          <BarChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                            <XAxis
+                              dataKey="fecha"
+                              stroke="var(--muted-foreground)"
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <YAxis
+                              stroke="var(--muted-foreground)"
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                              label={{ value: 'Quantity', angle: -90, position: 'insideLeft' }}
+                              domain={[0, Math.max(3000, ...chartData.map(d => d.cantidad))]}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: "var(--card)",
+                                borderColor: "var(--border)",
+                                borderRadius: "var(--radius)",
+                              }}
+                              itemStyle={{ color: "var(--foreground)" }}
+                              formatter={(value: any) => [`${value} units`, "Quantity"]}
+                            />
+                            <ReferenceLine 
+                              y={3000} 
+                              stroke="#9333ea" 
+                              strokeDasharray="4 4" 
+                              strokeWidth={2}
+                              label={{ 
+                                value: "Target: 3000", 
+                                position: "right",
+                                fill: "#9333ea",
+                                fontSize: 12
+                              }}
+                            />
+                            <Bar dataKey="cantidad" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Tabla de órdenes del trabajador - Sin título */}
+                  <Card>
+                    <CardContent className="pt-6">
+                      {loadingWorkerData ? (
+                        <div className="flex items-center justify-center py-8">
+                          <p className="text-muted-foreground">Loading orders...</p>
+                        </div>
+                      ) : workerOrders.length === 0 ? (
+                        <div className="flex items-center justify-center py-8">
+                          <p className="text-muted-foreground">
+                            No orders available{fechaInicio || fechaFin ? ' for the selected date range' : ''}
+                          </p>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>OrdenID</TableHead>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Role</TableHead>
+                              <TableHead>Picker</TableHead>
+                              <TableHead>Packer</TableHead>
+                              <TableHead>Items</TableHead>
+                              <TableHead>Time</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Result</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {workerOrders.map((order) => {
+                              const role = order.picker === selectedWorker && order.packer === selectedWorker
+                                ? "Both"
+                                : order.picker === selectedWorker
+                                  ? "Picker"
+                                  : "Packer"
+                              
+                              return (
+                                <TableRow key={order.id}>
+                                  <TableCell className="font-medium">{order.id}</TableCell>
+                                  <TableCell>{order.date}</TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline">{role}</Badge>
+                                  </TableCell>
+                                  <TableCell>{order.picker || "-"}</TableCell>
+                                  <TableCell>{order.packer || "-"}</TableCell>
+                                  <TableCell>{order.items}</TableCell>
+                                  <TableCell>{order.time}</TableCell>
+                                  <TableCell>
+                                    <Badge variant={order.status === "Pending" ? "outline" : "secondary"}>
+                                      {order.status}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    {order.result ? (
+                                      <span
+                                        className={`text-sm font-medium ${
+                                          order.result === "Correct"
+                                            ? "text-green-600"
+                                            : order.result === "Issues"
+                                              ? "text-amber-600"
+                                              : "text-red-600"
+                                        }`}
+                                      >
+                                        {order.result}
+                                      </span>
+                                    ) : (
+                                      <span className="text-sm text-muted-foreground">-</span>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            })}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
-          )}
+          ) : activeTab === "workers" ? (
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Workers Management</CardTitle>
+                      <CardDescription>Manage your team of workers</CardDescription>
+                    </div>
+                    <Dialog open={isAddWorkerDialogOpen} onOpenChange={setIsAddWorkerDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Worker
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add New Worker</DialogTitle>
+                          <DialogDescription>
+                            Enter the worker's information to add them to the system.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <form
+                          onSubmit={async (e) => {
+                            e.preventDefault()
+                            try {
+                              const response = await fetch(`${API_URL}/api/workers`, {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                  nombre: `${newWorker.name} ${newWorker.lastname}`,
+                                  id: newWorker.id,
+                                  wallet: newWorker.wallet,
+                                  rol: 'trabajador'
+                                }),
+                              })
+                              
+                              if (!response.ok) {
+                                throw new Error("Error adding worker")
+                              }
+                              
+                              await response.json()
+                              
+                              // Recargar la lista completa de trabajadores desde el servidor
+                              const workersResponse = await fetch(`${API_URL}/api/workers`)
+                              if (workersResponse.ok) {
+                                const workersData = await workersResponse.json()
+                                setWorkers(workersData)
+                              }
+                              
+                              // Reset form
+                              setNewWorker({ name: "", lastname: "", id: "", wallet: "" })
+                              setIsAddWorkerDialogOpen(false)
+                              
+                              // Refresh metrics to include new worker
+                              const metricsResponse = await fetch(`${API_URL}/api/metrics/operatives`)
+                              if (metricsResponse.ok) {
+                                const metrics = await metricsResponse.json()
+                                setOperativeMetrics(metrics)
+                              }
+                            } catch (error) {
+                              console.error("Error adding worker:", error)
+                              alert("Error adding worker. Please try again.")
+                            }
+                          }}
+                          className="space-y-4"
+                        >
+                          <div className="space-y-2">
+                            <Label htmlFor="name">Name</Label>
+                            <Input
+                              id="name"
+                              value={newWorker.name}
+                              onChange={(e) => setNewWorker({ ...newWorker, name: e.target.value })}
+                              required
+                              placeholder="Enter worker's name"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="lastname">Last Name</Label>
+                            <Input
+                              id="lastname"
+                              value={newWorker.lastname}
+                              onChange={(e) => setNewWorker({ ...newWorker, lastname: e.target.value })}
+                              required
+                              placeholder="Enter worker's last name"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="id">ID</Label>
+                            <Input
+                              id="id"
+                              value={newWorker.id}
+                              onChange={(e) => setNewWorker({ ...newWorker, id: e.target.value })}
+                              required
+                              placeholder="Enter worker's ID"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="wallet">Wallet</Label>
+                            <Input
+                              id="wallet"
+                              value={newWorker.wallet}
+                              onChange={(e) => setNewWorker({ ...newWorker, wallet: e.target.value })}
+                              required
+                              placeholder="Enter worker's wallet address"
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setIsAddWorkerDialogOpen(false)
+                                setNewWorker({ name: "", lastname: "", id: "", wallet: "" })
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button type="submit">Add Worker</Button>
+                          </div>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {workers.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground mb-4">No workers added yet</p>
+                      <p className="text-sm text-muted-foreground">Click "Add Worker" to get started</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Last Name</TableHead>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Wallet</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {workers.map((worker, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{worker.name}</TableCell>
+                            <TableCell>{worker.lastname}</TableCell>
+                            <TableCell>{worker.id}</TableCell>
+                            <TableCell className="font-mono text-sm">{worker.wallet}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ) : null}
         </div>
       </main>
     </div>
