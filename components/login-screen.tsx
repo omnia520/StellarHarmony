@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Wallet, ShieldCheck, Truck, Key } from "lucide-react"
+import { Wallet, ShieldCheck, Truck, Key, Target } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -51,9 +51,7 @@ export function LoginScreen({ onConnect, onWalletConnect }: LoginScreenProps) {
       <div className="absolute inset-0 -z-10 h-full w-full bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:6rem_4rem] opacity-50 dark:bg-[linear-gradient(to_right,#1f1f1f_1px,transparent_1px),linear-gradient(to_bottom,#1f1f1f_1px,transparent_1px)]"></div>
 
       <div className="mb-8 flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <Truck className="h-6 w-6" />
-        </div>
+        <Target className="mr-2 h-6 w-6 text-emerald-600" />
         <h1 className="text-3xl font-bold tracking-tight">Harmory</h1>
       </div>
 
