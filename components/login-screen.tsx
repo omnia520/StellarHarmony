@@ -21,7 +21,7 @@ export function LoginScreen({ onConnect, onWalletConnect }: LoginScreenProps) {
   const handleWalletSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!wallet.trim()) {
-      setError("Por favor ingresa una wallet")
+      setError("Please enter a wallet")
       return
     }
 
@@ -31,8 +31,8 @@ export function LoginScreen({ onConnect, onWalletConnect }: LoginScreenProps) {
     try {
       const response = await fetch(`${API_URL}/api/auth/wallet/${encodeURIComponent(wallet.trim())}`)
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Error desconocido" }))
-        throw new Error(errorData.error || "Wallet no encontrada en la base de datos")
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+        throw new Error(errorData.error || "Wallet not found in database")
       }
 
       const userData = await response.json()
@@ -40,8 +40,8 @@ export function LoginScreen({ onConnect, onWalletConnect }: LoginScreenProps) {
         onWalletConnect(wallet.trim(), userData)
       }
     } catch (err) {
-      console.error("Error al autenticar wallet:", err)
-      setError(err instanceof Error ? err.message : "Error al autenticar wallet")
+      console.error("Error authenticating wallet:", err)
+      setError(err instanceof Error ? err.message : "Error authenticating wallet")
     } finally {
       setIsLoading(false)
     }
@@ -92,7 +92,7 @@ export function LoginScreen({ onConnect, onWalletConnect }: LoginScreenProps) {
             <div className="grid gap-2">
               <Input
                 type="text"
-                placeholder="Ingresa tu wallet"
+                placeholder="Enter your wallet"
                 value={wallet}
                 onChange={(e) => setWallet(e.target.value)}
                 disabled={isLoading}
@@ -108,7 +108,7 @@ export function LoginScreen({ onConnect, onWalletConnect }: LoginScreenProps) {
                 disabled={isLoading || !wallet.trim()}
               >
                 <Key className="h-5 w-5" />
-                {isLoading ? "Verificando..." : "Conectar con Wallet"}
+                {isLoading ? "Verifying..." : "Connect with Wallet"}
               </Button>
             </div>
           </form>
