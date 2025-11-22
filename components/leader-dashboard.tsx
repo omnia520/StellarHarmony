@@ -549,8 +549,8 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
   const calculateDailyEfficiency = (): string => {
     // TODO: Calcular basado en promedio de tiempo histórico
     // Por ahora retornamos un valor placeholder
-    const reviewedOrders = orders.filter((order) => order.status === "Reviewed")
-    if (reviewedOrders.length === 0) return "0%"
+    //const reviewedOrders = orders.filter((order) => order.status === "Reviewed")
+    //if (reviewedOrders.length === 0) return "0%"
     
     // Lógica temporal - se ajustará en la tarde
     return "94.2%"
