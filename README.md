@@ -20,22 +20,6 @@ Those wallets become **recurring income channels**, not one-time airdrops, and w
 
 ---
 
-## 🖼 Logos & Visual Identity
-
-> Minimal, green, and frequency-based – to represent alignment between people, work and value flows.
-
-- **Primary logo**  
-  `assets/harmony-logo-green-full.svg`  
-  Full wordmark “Harmony” with a green arc made of aligned waves/frequencies.
-
-- **Icon / App mark**  
-  `assets/harmony-mark-green.svg`  
-  Simplified green wave/arc, suitable for wallet/app icon and favicon.
-
-Use green as the main color (growth, regeneration, trust) with neutral dark text.
-
----
-
 ## 💥 Problem – What we are fixing (and how bad it is)
 
 ### 1. Inside companies (especially logistics)
@@ -288,8 +272,7 @@ The code will prioritize:
 
 ---
 
-## 🚀 Getting Started (high-level)
-
+## 🚀 Getting Started 
 > This section is indicative; exact commands will depend on the final implementation.
 
 1. **Clone the repo**
