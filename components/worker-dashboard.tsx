@@ -157,7 +157,7 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
           setMetrics(data)
         }
       } catch (error) {
-        console.error("Error al cargar métricas:", error)
+        console.error("Error loading metrics:", error)
       }
     }
     fetchMetrics()
@@ -176,14 +176,14 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
         const url = `${API_URL}/api/operative/ordenes/${encodeURIComponent(workerName)}${queryString ? `?${queryString}` : ''}`
         
         const response = await fetch(url)
-        if (!response.ok) throw new Error("Error al cargar órdenes")
+        if (!response.ok) throw new Error("Error loading orders")
         const data: OrderFromDB[] = await response.json()
         const processed = processOrders(data, workerName)
         // Ordenar por fecha descendente (más recientes primero)
         processed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         setOrders(processed)
       } catch (error) {
-        console.error("Error al cargar órdenes:", error)
+        console.error("Error loading orders:", error)
         setOrders([])
       } finally {
         setLoading(false)
@@ -232,7 +232,7 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
             
             const fechaFormateada = fecha && !isNaN(fecha.getTime())
               ? fecha.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
-              : fechaStr.substring(0, 10) || 'Sin fecha'
+              : fechaStr.substring(0, 10) || 'No date'
             
             return {
               fecha: fechaFormateada,
@@ -250,7 +250,7 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
           setChartData([])
         }
       } catch (error) {
-        console.error("Error al cargar gráfico:", error)
+        console.error("Error loading chart:", error)
         setChartData([])
       } finally {
         setLoadingChart(false)
@@ -304,7 +304,7 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
             onClick={onLogout}
           >
             <LogOut className="mr-2 h-4 w-4" />
-            Cerrar Sesión
+            Logout
           </Button>
         </div>
       </aside>
@@ -363,13 +363,13 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
               {/* Filtros de fecha */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Filtros</CardTitle>
-                  <CardDescription>Filtrar órdenes por rango de fechas</CardDescription>
+                  <CardTitle>Filters</CardTitle>
+                  <CardDescription>Filter orders by date range</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-4 items-end">
                     <div className="flex-1">
-                      <label className="text-sm font-medium mb-2 block">Fecha Inicio</label>
+                      <label className="text-sm font-medium mb-2 block">Start Date</label>
                       <Input
                         type="date"
                         value={fechaInicio}
@@ -377,7 +377,7 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="text-sm font-medium mb-2 block">Fecha Fin</label>
+                      <label className="text-sm font-medium mb-2 block">End Date</label>
                       <Input
                         type="date"
                         value={fechaFin}
@@ -392,7 +392,7 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
                         setFechaFin("")
                       }}
                     >
-                      Limpiar Filtros
+                      Clear Filters
                     </Button>
                   </div>
                 </CardContent>
@@ -404,7 +404,7 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle>My Order History</CardTitle>
-                      <CardDescription>Historial de todas tus órdenes procesadas</CardDescription>
+                      <CardDescription>History of all your processed orders</CardDescription>
                     </div>
                     <div className="flex gap-2">
                       <div className="relative">
@@ -423,11 +423,11 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
                 <CardContent>
                   {loading ? (
                     <div className="flex items-center justify-center py-8">
-                      <p className="text-muted-foreground">Cargando órdenes...</p>
+                      <p className="text-muted-foreground">Loading orders...</p>
                     </div>
                   ) : orders.length === 0 ? (
                     <div className="flex items-center justify-center py-8">
-                      <p className="text-muted-foreground">No hay órdenes disponibles</p>
+                      <p className="text-muted-foreground">No orders available</p>
                     </div>
                   ) : (
                     <Table>
@@ -523,13 +523,13 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
               {/* Filtros de fecha */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Filtros</CardTitle>
-                  <CardDescription>Filtrar rendimiento por rango de fechas</CardDescription>
+                  <CardTitle>Filters</CardTitle>
+                  <CardDescription>Filter performance by date range</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-4 items-end">
                     <div className="flex-1">
-                      <label className="text-sm font-medium mb-2 block">Fecha Inicio</label>
+                      <label className="text-sm font-medium mb-2 block">Start Date</label>
                       <Input
                         type="date"
                         value={fechaInicio}
@@ -537,7 +537,7 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="text-sm font-medium mb-2 block">Fecha Fin</label>
+                      <label className="text-sm font-medium mb-2 block">End Date</label>
                       <Input
                         type="date"
                         value={fechaFin}
@@ -552,7 +552,7 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
                         setFechaFin("")
                       }}
                     >
-                      Limpiar Filtros
+                      Clear Filters
                     </Button>
                   </div>
                 </CardContent>
@@ -562,17 +562,17 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
               <Card>
                 <CardHeader>
                   <CardTitle>My Performance Chart</CardTitle>
-                  <CardDescription>Productos procesados por día</CardDescription>
+                  <CardDescription>Products processed per day</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {loadingChart ? (
                     <div className="flex items-center justify-center" style={{ minHeight: '400px' }}>
-                      <p className="text-muted-foreground">Cargando datos del gráfico...</p>
+                      <p className="text-muted-foreground">Loading chart data...</p>
                     </div>
                   ) : chartData.length === 0 ? (
                     <div className="flex items-center justify-center" style={{ minHeight: '400px' }}>
                       <p className="text-muted-foreground">
-                        No hay datos disponibles{fechaInicio || fechaFin ? ' para el rango de fechas seleccionado' : ''}
+                        No data available{fechaInicio || fechaFin ? ' for the selected date range' : ''}
                       </p>
                     </div>
                   ) : (
@@ -592,7 +592,7 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
-                            label={{ value: 'Cantidad', angle: -90, position: 'insideLeft' }}
+                            label={{ value: 'Quantity', angle: -90, position: 'insideLeft' }}
                             domain={[0, Math.max(3000, ...chartData.map(d => d.cantidad))]}
                           />
                           <Tooltip
@@ -602,7 +602,7 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
                               borderRadius: "var(--radius)",
                             }}
                             itemStyle={{ color: "var(--foreground)" }}
-                            formatter={(value: any) => [`${value} unidades`, "Cantidad"]}
+                            formatter={(value: any) => [`${value} units`, "Quantity"]}
                           />
                           <ReferenceLine 
                             y={3000} 
@@ -610,7 +610,7 @@ export function WorkerDashboard({ onLogout, workerName, workerWallet }: WorkerDa
                             strokeDasharray="4 4" 
                             strokeWidth={2}
                             label={{ 
-                              value: "Meta: 3000", 
+                              value: "Target: 3000", 
                               position: "right",
                               fill: "#9333ea",
                               fontSize: 12

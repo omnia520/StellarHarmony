@@ -162,18 +162,18 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
           },
         })
         if (!response.ok) {
-          throw new Error(`Error al cargar órdenes: ${response.status} ${response.statusText}`)
+          throw new Error(`Error loading orders: ${response.status} ${response.statusText}`)
         }
         const data: OrderFromDB[] = await response.json()
         const processed = processOrders(data)
         setOrders(processed)
       } catch (error) {
-        console.error("Error al cargar órdenes:", error)
+        console.error("Error loading orders:", error)
         // En caso de error, dejar el array vacío
         setOrders([])
         // Mostrar mensaje de error más descriptivo
         if (error instanceof Error) {
-          console.error("Detalles del error:", error.message)
+          console.error("Error details:", error.message)
         }
       } finally {
         setLoading(false)
@@ -194,16 +194,16 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
           },
         })
         if (!response.ok) {
-          throw new Error(`Error al cargar métricas: ${response.status} ${response.statusText}`)
+          throw new Error(`Error loading metrics: ${response.status} ${response.statusText}`)
         }
         const data: OperativeMetric[] = await response.json()
         setOperativeMetrics(data)
       } catch (error) {
-        console.error("Error al cargar métricas:", error)
+        console.error("Error loading metrics:", error)
         // En caso de error, usar datos vacíos
         setOperativeMetrics([])
         if (error instanceof Error) {
-          console.error("Detalles del error:", error.message)
+          console.error("Error details:", error.message)
         }
       }
     }
@@ -291,7 +291,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
             // Formatear fecha para mostrar en el eje X
             const fechaFormateada = fecha && !isNaN(fecha.getTime())
               ? fecha.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
-              : fechaStr.substring(0, 10) || 'Sin fecha'
+              : fechaStr.substring(0, 10) || 'No date'
             
             return {
               fecha: fechaFormateada,
@@ -349,7 +349,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
         }),
       })
 
-      if (!response.ok) throw new Error("Error al actualizar la orden")
+      if (!response.ok) throw new Error("Error updating order")
 
       // Actualizar el estado local
       setOrders((prevOrders) =>
@@ -365,8 +365,8 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
         })
       )
     } catch (error) {
-      console.error("Error al actualizar la orden:", error)
-      alert("Error al actualizar la orden. Por favor, intenta de nuevo.")
+      console.error("Error updating order:", error)
+      alert("Error updating order. Please try again.")
     }
   }
 
@@ -510,7 +510,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                     </div>
                   ) : orders.length === 0 ? (
                     <div className="flex items-center justify-center py-8">
-                      <p className="text-muted-foreground">No hay órdenes disponibles</p>
+                      <p className="text-muted-foreground">No orders available</p>
                     </div>
                   ) : (
                     <Table>
@@ -682,7 +682,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                       {operativeMetrics.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                            No hay métricas disponibles
+                            No metrics available
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -725,7 +725,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                     <CardContent className="pt-6">
                       <div className="flex gap-4 items-end">
                         <div className="flex-1">
-                          <label className="text-sm font-medium mb-2 block">Fecha Inicio</label>
+                          <label className="text-sm font-medium mb-2 block">Start Date</label>
                           <Input
                             type="date"
                             value={fechaInicio}
@@ -733,7 +733,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                           />
                         </div>
                         <div className="flex-1">
-                          <label className="text-sm font-medium mb-2 block">Fecha Fin</label>
+                          <label className="text-sm font-medium mb-2 block">End Date</label>
                           <Input
                             type="date"
                             value={fechaFin}
@@ -748,7 +748,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                             setFechaFin("")
                           }}
                         >
-                          Limpiar Filtros
+                          Clear Filters
                         </Button>
                       </div>
                     </CardContent>
@@ -759,12 +759,12 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                     <CardContent className="pt-6">
                       {loadingWorkerData ? (
                         <div className="flex items-center justify-center" style={{ minHeight: '400px' }}>
-                          <p className="text-muted-foreground">Cargando datos del gráfico...</p>
+                          <p className="text-muted-foreground">Loading chart data...</p>
                         </div>
                       ) : chartData.length === 0 ? (
                         <div className="flex items-center justify-center" style={{ minHeight: '400px' }}>
                           <p className="text-muted-foreground">
-                            No hay datos disponibles{fechaInicio || fechaFin ? ' para el rango de fechas seleccionado' : ''}
+                            No data available{fechaInicio || fechaFin ? ' for the selected date range' : ''}
                           </p>
                         </div>
                       ) : (
@@ -784,7 +784,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                               fontSize={12}
                               tickLine={false}
                               axisLine={false}
-                              label={{ value: 'Cantidad', angle: -90, position: 'insideLeft' }}
+                              label={{ value: 'Quantity', angle: -90, position: 'insideLeft' }}
                               domain={[0, Math.max(3000, ...chartData.map(d => d.cantidad))]}
                             />
                             <Tooltip
@@ -794,7 +794,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                                 borderRadius: "var(--radius)",
                               }}
                               itemStyle={{ color: "var(--foreground)" }}
-                              formatter={(value: any) => [`${value} unidades`, "Cantidad"]}
+                              formatter={(value: any) => [`${value} units`, "Quantity"]}
                             />
                             <ReferenceLine 
                               y={3000} 
@@ -802,7 +802,7 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                               strokeDasharray="4 4" 
                               strokeWidth={2}
                               label={{ 
-                                value: "Meta: 3000", 
+                                value: "Target: 3000", 
                                 position: "right",
                                 fill: "#9333ea",
                                 fontSize: 12
@@ -821,12 +821,12 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                     <CardContent className="pt-6">
                       {loadingWorkerData ? (
                         <div className="flex items-center justify-center py-8">
-                          <p className="text-muted-foreground">Cargando órdenes...</p>
+                          <p className="text-muted-foreground">Loading orders...</p>
                         </div>
                       ) : workerOrders.length === 0 ? (
                         <div className="flex items-center justify-center py-8">
                           <p className="text-muted-foreground">
-                            No hay órdenes disponibles{fechaInicio || fechaFin ? ' para el rango de fechas seleccionado' : ''}
+                            No orders available{fechaInicio || fechaFin ? ' for the selected date range' : ''}
                           </p>
                         </div>
                       ) : (
