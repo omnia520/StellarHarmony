@@ -12,7 +12,7 @@
 
 Harmony is a Web3 incentive platform that helps companies – starting with logistics and warehouse teams – **measure real performance and pay fair, recurring bonuses on Stellar**.
 
-Instead of creating hundreds of dead wallets at events, Harmony focuses on **corporate onboarding**: each company creates or links wallets for their workers and sends periodic performance bonuses.  
+Harmony focuses on **corporate onboarding**: each company creates or links wallets for their workers and sends periodic performance bonuses.  
 Those wallets become **recurring income channels**, not one-time airdrops, and workers gain access to **on-chain financial services** (savings, basic DeFi, trading, off-ramp).
 
 ---
