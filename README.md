@@ -1,7 +1,4 @@
 harmony
-<p align="center">
-  <img src="assets/harmony-logo-green-full.svg" alt="Harmony Logo" width="260">
-</p>
 
 <h1 align="center">Harmony – Regenerative Workforce Incentives on Stellar</h1>
 
