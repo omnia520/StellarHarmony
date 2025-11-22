@@ -5,7 +5,7 @@ import {
   LayoutDashboard,
   Package,
   Users,
-  Settings,
+  Wallet,
   LogOut,
   CheckCircle2,
   AlertTriangle,
@@ -18,6 +18,9 @@ import {
   DollarSign,
   Target,
   Plus,
+  ArrowDownCircle,
+  History,
+  Activity,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -177,6 +180,96 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
     wallet: ""
   })
   const [statusFilter, setStatusFilter] = useState<string | null>(null) // null = todos, "Pending" o "Terminado"
+  
+  // Vault states
+  const [vaultBalance, setVaultBalance] = useState<number>(4250.00) // Balance en USDC
+  const [depositAmount, setDepositAmount] = useState<string>("")
+  const [isDepositing, setIsDepositing] = useState(false)
+  const [depositHistory, setDepositHistory] = useState<Array<{
+    id: string
+    date: string
+    amount: number
+    status: "completed" | "pending" | "failed"
+    txHash: string
+  }>>([
+    {
+      id: "1",
+      date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      amount: 2000,
+      status: "completed",
+      txHash: "0x1234...5678"
+    },
+    {
+      id: "2",
+      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      amount: 1500,
+      status: "completed",
+      txHash: "0xabcd...efgh"
+    },
+    {
+      id: "3",
+      date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      amount: 750,
+      status: "completed",
+      txHash: "0x9876...5432"
+    }
+  ])
+  const [activityHistory, setActivityHistory] = useState<Array<{
+    id: string
+    date: string
+    type: "deposit" | "withdrawal" | "bonus_payment" | "liquidity_provision"
+    amount: number
+    description: string
+    status: "completed" | "pending" | "failed"
+    txHash: string
+  }>>([
+    {
+      id: "1",
+      date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      type: "bonus_payment",
+      amount: 450,
+      description: "Bonus payment to Alex Chen",
+      status: "completed",
+      txHash: "0x1111...2222"
+    },
+    {
+      id: "2",
+      date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      type: "deposit",
+      amount: 2000,
+      description: "Deposit to vault",
+      status: "completed",
+      txHash: "0x1234...5678"
+    },
+    {
+      id: "3",
+      date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      type: "bonus_payment",
+      amount: 380,
+      description: "Bonus payment to Sarah Jones",
+      status: "completed",
+      txHash: "0x3333...4444"
+    },
+    {
+      id: "4",
+      date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+      type: "liquidity_provision",
+      amount: 1000,
+      description: "Liquidity provision to Stellar Anchor",
+      status: "completed",
+      txHash: "0x5555...6666"
+    },
+    {
+      id: "5",
+      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      type: "deposit",
+      amount: 1500,
+      description: "Deposit to vault",
+      status: "completed",
+      txHash: "0xabcd...efgh"
+    }
+  ])
+  const [activityFilter, setActivityFilter] = useState<string | null>(null) // null = todos, "deposit", "withdrawal", "bonus_payment", "liquidity_provision"
 
   // Cargar órdenes desde la API
   useEffect(() => {
@@ -498,9 +591,13 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
             <Users className="mr-2 h-4 w-4" />
             Workers
           </Button>
-          <Button variant="ghost" className="w-full justify-start">
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
+          <Button
+            variant={activeTab === "vault" ? "secondary" : "ghost"}
+            className="w-full justify-start"
+            onClick={() => setActiveTab("vault")}
+          >
+            <Wallet className="mr-2 h-4 w-4" />
+            Vault
           </Button>
         </nav>
         <div className="border-t p-4">
@@ -518,7 +615,9 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         <header className="flex h-16 items-center justify-between border-b bg-background px-6">
-          <h1 className="text-xl font-semibold capitalize">{activeTab} Overview</h1>
+          <h1 className="text-xl font-semibold capitalize">
+            {activeTab === "vault" ? "Vault" : activeTab} Overview
+          </h1>
           <div className="flex items-center gap-4">
             <div className="text-sm text-muted-foreground">
               Wallet: <span className="font-mono text-foreground">GDB...7K2L</span>
@@ -1164,6 +1263,288 @@ export function LeaderDashboard({ onLogout }: LeaderDashboardProps) {
                       </TableBody>
                     </Table>
                   )}
+                </CardContent>
+              </Card>
+            </div>
+          ) : activeTab === "vault" ? (
+            <div className="space-y-6">
+              {/* Balance Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Vault Balance</CardTitle>
+                  <CardDescription>Current balance available for liquidity provision</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-4xl font-bold text-emerald-600">
+                        {vaultBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Connected to Stellar Anchor
+                      </p>
+                    </div>
+                    <Wallet className="h-16 w-16 text-emerald-600/20" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Deposit Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Deposit Funds</CardTitle>
+                  <CardDescription>Add liquidity to the vault via Stellar Anchor</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault()
+                      if (!depositAmount || parseFloat(depositAmount) <= 0) {
+                        alert("Please enter a valid amount")
+                        return
+                      }
+                      
+                      setIsDepositing(true)
+                      try {
+                        // Simular conexión con Stellar Anchor
+                        await new Promise(resolve => setTimeout(resolve, 2000))
+                        
+                        const amount = parseFloat(depositAmount)
+                        const newDeposit = {
+                          id: Date.now().toString(),
+                          date: new Date().toISOString(),
+                          amount: amount,
+                          status: "completed" as const,
+                          txHash: `0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 10)}`
+                        }
+                        
+                        setVaultBalance(prev => prev + amount)
+                        setDepositHistory(prev => [newDeposit, ...prev])
+                        setActivityHistory(prev => [{
+                          id: Date.now().toString(),
+                          date: new Date().toISOString(),
+                          type: "deposit",
+                          amount: amount,
+                          description: "Deposit to vault",
+                          status: "completed",
+                          txHash: newDeposit.txHash
+                        }, ...prev])
+                        setDepositAmount("")
+                        alert(`Successfully deposited ${amount} USDC to vault`)
+                      } catch (error) {
+                        console.error("Error depositing:", error)
+                        alert("Error processing deposit. Please try again.")
+                      } finally {
+                        setIsDepositing(false)
+                      }
+                    }}
+                    className="space-y-4"
+                  >
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <Label htmlFor="deposit-amount">Amount (USDC)</Label>
+                        <Input
+                          id="deposit-amount"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(e.target.value)}
+                          placeholder="Enter amount to deposit"
+                          disabled={isDepositing}
+                          required
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Button type="submit" disabled={isDepositing} className="gap-2">
+                          <ArrowDownCircle className="h-4 w-4" />
+                          {isDepositing ? "Processing..." : "Deposit"}
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Funds will be deposited to the Stellar Anchor vault for liquidity provision
+                    </p>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {/* Deposit History */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Deposit History</CardTitle>
+                  <CardDescription>History of all deposits made to the vault</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {depositHistory.length === 0 ? (
+                    <div className="flex items-center justify-center py-8">
+                      <p className="text-muted-foreground">No deposits yet</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Transaction Hash</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {depositHistory.map((deposit) => (
+                          <TableRow key={deposit.id}>
+                            <TableCell>
+                              {new Date(deposit.date).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {deposit.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  deposit.status === "completed" ? "default" :
+                                  deposit.status === "pending" ? "secondary" :
+                                  "destructive"
+                                }
+                              >
+                                {deposit.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {deposit.txHash}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Activity History */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Activity History</CardTitle>
+                      <CardDescription>Complete history of all vault activities</CardDescription>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Filter className="h-4 w-4" />
+                          Filter
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Filter by Type</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setActivityFilter(null)}
+                          className={activityFilter === null ? "bg-accent" : ""}
+                        >
+                          All Activities
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setActivityFilter("deposit")}
+                          className={activityFilter === "deposit" ? "bg-accent" : ""}
+                        >
+                          Deposits
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setActivityFilter("withdrawal")}
+                          className={activityFilter === "withdrawal" ? "bg-accent" : ""}
+                        >
+                          Withdrawals
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setActivityFilter("bonus_payment")}
+                          className={activityFilter === "bonus_payment" ? "bg-accent" : ""}
+                        >
+                          Bonus Payments
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setActivityFilter("liquidity_provision")}
+                          className={activityFilter === "liquidity_provision" ? "bg-accent" : ""}
+                        >
+                          Liquidity Provision
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const filteredActivities = activityFilter
+                      ? activityHistory.filter(activity => activity.type === activityFilter)
+                      : activityHistory
+
+                    return filteredActivities.length === 0 ? (
+                      <div className="flex items-center justify-center py-8">
+                        <p className="text-muted-foreground">
+                          {activityFilter ? `No ${activityFilter} activities found` : "No activities yet"}
+                        </p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Transaction Hash</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredActivities.map((activity) => (
+                            <TableRow key={activity.id}>
+                              <TableCell>
+                                {new Date(activity.date).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="capitalize">
+                                  {activity.type.replace('_', ' ')}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{activity.description}</TableCell>
+                              <TableCell className="font-medium">
+                                {activity.amount > 0 ? '+' : ''}
+                                {activity.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    activity.status === "completed" ? "default" :
+                                    activity.status === "pending" ? "secondary" :
+                                    "destructive"
+                                  }
+                                >
+                                  {activity.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-mono text-sm">
+                                {activity.txHash}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )
+                  })()}
                 </CardContent>
               </Card>
             </div>
