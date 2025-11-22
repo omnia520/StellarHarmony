@@ -1,4 +1,4 @@
-harmony
+
 
 <h1 align="center">Harmony – Regenerative Workforce Incentives on Stellar</h1>
 
