@@ -285,6 +285,40 @@ app.get('/api/operative/chart/:nombre', async (req, res) => {
   }
 });
 
+// Ruta para autenticar por wallet y obtener rol
+app.get('/api/auth/wallet/:wallet', async (req, res) => {
+  try {
+    const pool = await getPool();
+    const wallet = req.params.wallet;
+    
+    console.log(`🔐 Autenticando wallet: ${wallet}`);
+    
+    const query = `
+      SELECT Nombre, Rol, Wallet
+      FROM Usuario
+      WHERE Wallet = @wallet
+    `;
+    
+    const result = await pool.request()
+      .input('wallet', sql.NVarChar(100), wallet)
+      .query(query);
+    
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ error: 'Wallet no encontrada en la base de datos' });
+    }
+    
+    const user = result.recordset[0];
+    res.json({
+      nombre: user.Nombre,
+      rol: user.Rol.toLowerCase(), // "lider" o "trabajador"
+      wallet: user.Wallet
+    });
+  } catch (err) {
+    console.error('❌ Error al autenticar wallet:', err);
+    res.status(500).json({ error: 'Error al autenticar wallet', details: err.message });
+  }
+});
+
 // Iniciar servidor
 app.listen(PORT, async () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);

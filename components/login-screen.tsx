@@ -1,14 +1,51 @@
 "use client"
 
-import { Wallet, ShieldCheck, Truck } from "lucide-react"
+import { useState } from "react"
+import { Wallet, ShieldCheck, Truck, Key } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface LoginScreenProps {
   onConnect: (role: "leader" | "operative") => void
+  onWalletConnect?: (wallet: string, userData: { nombre: string; rol: string; wallet: string }) => void
 }
 
-export function LoginScreen({ onConnect }: LoginScreenProps) {
+const API_URL = "http://localhost:3001"
+
+export function LoginScreen({ onConnect, onWalletConnect }: LoginScreenProps) {
+  const [wallet, setWallet] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleWalletSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!wallet.trim()) {
+      setError("Por favor ingresa una wallet")
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/wallet/${encodeURIComponent(wallet.trim())}`)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Error desconocido" }))
+        throw new Error(errorData.error || "Wallet no encontrada en la base de datos")
+      }
+
+      const userData = await response.json()
+      if (onWalletConnect) {
+        onWalletConnect(wallet.trim(), userData)
+      }
+    } catch (err) {
+      console.error("Error al autenticar wallet:", err)
+      setError(err instanceof Error ? err.message : "Error al autenticar wallet")
+    } finally {
+      setIsLoading(false)
+    }
+  }
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4">
       <div className="absolute inset-0 -z-10 h-full w-full bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:6rem_4rem] opacity-50 dark:bg-[linear-gradient(to_right,#1f1f1f_1px,transparent_1px),linear-gradient(to_bottom,#1f1f1f_1px,transparent_1px)]"></div>
@@ -41,6 +78,40 @@ export function LoginScreen({ onConnect }: LoginScreenProps) {
               Connect with Albedo
             </Button>
           </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">Or</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleWalletSubmit} className="grid gap-2">
+            <div className="grid gap-2">
+              <Input
+                type="text"
+                placeholder="Ingresa tu wallet"
+                value={wallet}
+                onChange={(e) => setWallet(e.target.value)}
+                disabled={isLoading}
+                className="w-full"
+              />
+              {error && (
+                <p className="text-xs text-destructive">{error}</p>
+              )}
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full gap-2 text-base"
+                disabled={isLoading || !wallet.trim()}
+              >
+                <Key className="h-5 w-5" />
+                {isLoading ? "Verificando..." : "Conectar con Wallet"}
+              </Button>
+            </div>
+          </form>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
