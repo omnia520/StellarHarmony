@@ -33,7 +33,7 @@ const usuarios = [
 function generarOrdenes() {
   const ordenes = [];
   const trabajadores = usuarios.filter(u => u.Rol === 'trabajador');
-  const estados = ['Terminado', 'Terminado', 'Terminado', 'Empacando', 'Pending'];
+  const estados = ['Terminado', 'Terminado', 'Terminado', 'Pending', 'Pending'];
   const resultados = ['Correct', 'Correct', 'Correct', 'Issues', null];
   
   let ordenId = 3000;
