@@ -270,7 +270,6 @@ The code will prioritize:
 ---
 
 ## 🚀 Getting Started 
-> This section is indicative; exact commands will depend on the final implementation.
 
 1. **Clone the repo**
 
