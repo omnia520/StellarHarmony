@@ -84,20 +84,14 @@ We give workers:
 
 ### 1. From chaos to clear tasks
 
-For each organization:
+Harmony connects directly to the company's existing systems:
 
-- Managers define **activity templates** (e.g. “Pick orders in Zone A”, “Inventory count”, “Cleaning aisle”).
-- Supervisors create **tasks** from these templates, assign them to workers and set expected time.
+- The **ERP/WMS** sends orders automatically to Harmony
+- Orders are transformed into **measurable activities**
+- Each activity is registered on-chain via **Soroban Contract**
+- Leaders review and approve, reject or skip activities
 
-Each task tracks:
-
-- `created_at` – when it was assigned  
-- `completed_at` – when the worker marked it as done  
-- `reviewed_at` – when a supervisor reviewed it  
-- Status: `ASSIGNED`, `PENDING_REVIEW`, `APPROVED_OK`, `APPROVED_MINOR`, `REJECTED_MAJOR`  
-- Evidence: photos + notes from the worker (via mobile webapp)
-
-Workers know exactly **what** to do, **how** and **by when**.
+Workers see their orders with clear status: **Completed**, **Rejected** or **Skipped**.
 
 ---
 
@@ -105,14 +99,15 @@ Workers know exactly **what** to do, **how** and **by when**.
 
 Harmony calculates on-chain metrics per worker and per month:
 
-- Tasks completed  
-- Tasks OK / minor issue / major error  
-- Average completion time  
-- Points earned (performance score)  
+- Tasks completed
+- Tasks OK / rejected
+- Completion rate
+- Total earnings (performance score)
 
 All of this is stored on Soroban contracts and mirrored in SQL for analytics and Power BI dashboards.
 
-> Companies move from “I *feel* you’re not performing” to “Here is your **clear performance history**, stored on-chain.”
+> Companies move from "I *feel* you're not performing" to "Here is your **clear performance history**, stored on-chain."
+
 
 ---
 
