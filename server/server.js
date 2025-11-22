@@ -97,17 +97,34 @@ app.get('/api/metrics/operatives', async (req, res) => {
   try {
     const pool = await getPool();
     
-    // Obtener Product Quantity y Orders Completed en una sola consulta
+    // Consulta simplificada sin filtros complejos - similar a /api/ordenes
+    // Obtener todos los trabajadores únicos y sus métricas totales
     const metricsQuery = `
       SELECT 
-        Sacador AS Nombre,
-        SUM(Cantidad) AS ProductQuantity,
-        COUNT(*) AS OrdersCompleted
-      FROM Ordenes
-      WHERE Sacador IS NOT NULL
-        AND Estado = 'terminado'
-        AND CAST(FechaFinEmpaque AS DATE) = CAST(GETDATE() AS DATE)
-      GROUP BY Sacador
+        Nombre,
+        SUM(ProductQuantity) AS ProductQuantity,
+        SUM(OrdersCompleted) AS OrdersCompleted
+      FROM (
+        SELECT 
+          Sacador AS Nombre,
+          SUM(Cantidad) AS ProductQuantity,
+          COUNT(*) AS OrdersCompleted
+        FROM Ordenes
+        WHERE Sacador IS NOT NULL
+        GROUP BY Sacador
+        
+        UNION ALL
+        
+        SELECT 
+          Empacador AS Nombre,
+          SUM(Cantidad) AS ProductQuantity,
+          COUNT(*) AS OrdersCompleted
+        FROM Ordenes
+        WHERE Empacador IS NOT NULL
+        GROUP BY Empacador
+      ) AS CombinedMetrics
+      GROUP BY Nombre
+      ORDER BY Nombre
     `;
     
     const result = await pool.request().query(metricsQuery);
@@ -117,14 +134,82 @@ app.get('/api/metrics/operatives', async (req, res) => {
       name: row.Nombre,
       productQuantity: row.ProductQuantity || 0,
       completed: row.OrdersCompleted || 0,
-      efficiency: '0%', // Placeholder hasta que se defina en la tarde
-      bonus: '0 USDC' // Placeholder hasta que se defina la lógica
+      efficiency: '0%',
+      bonus: '0 USDC'
     }));
     
     res.json(metrics);
   } catch (err) {
     console.error('Error al obtener métricas:', err);
     res.status(500).json({ error: 'Error al obtener métricas', details: err.message });
+  }
+});
+
+// Ruta para obtener órdenes de un trabajador específico con filtro de fechas
+app.get('/api/operative/ordenes/:nombre', async (req, res) => {
+  try {
+    const pool = await getPool();
+    const nombre = req.params.nombre;
+    const { fechaInicio, fechaFin } = req.query;
+    
+    let query = `
+      SELECT *
+      FROM Ordenes
+      WHERE (Sacador = @nombre OR Empacador = @nombre)
+    `;
+    
+    const request = pool.request().input('nombre', sql.NVarChar(50), nombre);
+    
+    // Agregar filtro de fechas si se proporcionan
+    if (fechaInicio && fechaFin) {
+      query += ` AND CAST(FechaFinEmpaque AS DATE) BETWEEN @fechaInicio AND @fechaFin`;
+      request.input('fechaInicio', sql.Date, fechaInicio);
+      request.input('fechaFin', sql.Date, fechaFin);
+    }
+    
+    query += ` ORDER BY FechaFinEmpaque DESC`;
+    
+    const result = await request.query(query);
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error al obtener órdenes del trabajador:', err);
+    res.status(500).json({ error: 'Error al obtener órdenes', details: err.message });
+  }
+});
+
+// Ruta para obtener datos de gráfico por trabajador y rango de fechas
+app.get('/api/operative/chart/:nombre', async (req, res) => {
+  try {
+    const pool = await getPool();
+    const nombre = req.params.nombre;
+    const { fechaInicio, fechaFin } = req.query;
+    
+    let query = `
+      SELECT 
+        CAST(FechaFinEmpaque AS DATE) AS Fecha,
+        SUM(Cantidad) AS Cantidad,
+        COUNT(*) AS Ordenes
+      FROM Ordenes
+      WHERE (Sacador = @nombre OR Empacador = @nombre)
+        AND FechaFinEmpaque IS NOT NULL
+    `;
+    
+    const request = pool.request().input('nombre', sql.NVarChar(50), nombre);
+    
+    // Agregar filtro de fechas si se proporcionan
+    if (fechaInicio && fechaFin) {
+      query += ` AND CAST(FechaFinEmpaque AS DATE) BETWEEN @fechaInicio AND @fechaFin`;
+      request.input('fechaInicio', sql.Date, fechaInicio);
+      request.input('fechaFin', sql.Date, fechaFin);
+    }
+    
+    query += ` GROUP BY CAST(FechaFinEmpaque AS DATE) ORDER BY CAST(FechaFinEmpaque AS DATE) ASC`;
+    
+    const result = await request.query(query);
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error al obtener datos del gráfico:', err);
+    res.status(500).json({ error: 'Error al obtener datos del gráfico', details: err.message });
   }
 });
 
