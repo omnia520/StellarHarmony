@@ -136,6 +136,163 @@ This creates:
 
 ## 🏗 Technical Architecture (Present)
 
+---
+
+## 🔄 User Flows
+
+### Overview
+```
+┌─────────────────────────────────────────────────────────┐
+│                    ⭐ HARMONY                            │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│   🏢 ENTERPRISE ──→ ⭐ HARMONY ──→ 📊 DASHBOARDS       │
+│   (ERP/WMS)         (Soroban)       (Leader/Worker)    │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│   👔 LEADER                    👷 WORKER                │
+│   ┌──────────────┐            ┌──────────────┐         │
+│   │ Activities   │            │ My Orders    │         │
+│   │ Metrics      │            │ Performance  │         │
+│   │ Workers      │            └──────────────┘         │
+│   │ Vault        │                                     │
+│   └──────────────┘                                     │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Flow 1: System (Complementary)
+
+How enterprise systems connect with Harmony:
+```mermaid
+flowchart LR
+    subgraph EMPRESA["🏢 EMPRESA"]
+        ERP["ERP / WMS"]
+        ORDERS["Sistema de Órdenes"]
+    end
+
+    subgraph HARMONY["⭐ STELLAR HARMONY"]
+        API["API Integration"]
+        CHAIN["Soroban Contract"]
+        DB[("Activities DB")]
+    end
+
+    subgraph DASHBOARDS["📊 DASHBOARDS"]
+        LEADER["Leader"]
+        WORKER["Worker"]
+    end
+
+    ERP --> API
+    ORDERS --> API
+    API --> CHAIN
+    API --> DB
+    CHAIN -.->|sync| DB
+    DB --> LEADER
+    DB --> WORKER
+```
+
+1. The company's ERP/WMS sends orders
+2. Harmony transforms them into **measurable activities**
+3. They are registered on-chain via **Soroban**
+4. Data feeds both Leader and Worker dashboards
+
+---
+
+### Flow 2: Leader Dashboard
+
+The leader manages activities, metrics, workers and funds through **4 modules**:
+```mermaid
+flowchart TD
+    LOGIN["🔐 Login with Wallet"]
+    DASH["📊 LEADER DASHBOARD"]
+    
+    LOGIN --> DASH
+    
+    DASH --> VAU
+    DASH --> WOR
+    DASH --> MET
+    DASH --> ACT
+    
+    subgraph VAU_SUB["Vault"]
+        VAU["🏦 VAULT"]
+        VAU --> V1["Balance"]
+        VAU --> V2["Recharge"]
+        VAU --> V3["Transactions"]
+    end
+    
+    subgraph WOR_SUB["Workers"]
+        WOR["👥 WORKERS"]
+        WOR --> W1["View Workers"]
+        WOR --> W2["Add Worker"]
+        W2 --> W3["Assign Wallet"]
+    end
+    
+    subgraph MET_SUB["Metrics"]
+        MET["📈 METRICS"]
+        MET --> M1["Team Overview"]
+        MET --> M2["Individual Stats"]
+        M2 --> M3["Activity History"]
+    end
+    
+    subgraph ACT_SUB["Activities"]
+        ACT["📋 ACTIVITIES"]
+        ACT --> A1["Pending Orders"]
+        ACT --> A2["Efficiency"]
+        ACT --> A3["Current Pool"]
+        A1 --> A4{"Review"}
+        A4 -->|Approve| A5["✅ Pay"]
+        A4 -->|Reject| A6["❌ No Pay"]
+        A4 -->|Skip| A7["⏭️ Later"]
+    end
+```
+
+| Module | Function |
+|--------|----------|
+| **📋 Activities** | View pending orders, efficiency and current pool. Approve, reject or skip activities |
+| **📈 Metrics** | Team and individual metrics. Select a worker → view activity history |
+| **👥 Workers** | Add workers to the organization and assign wallets for payment distribution |
+| **🏦 Vault** | View balance, recharge the pool and check transaction history |
+
+---
+
+### Flow 3: Worker Dashboard
+
+The worker views their orders and performance through **2 views**:
+```mermaid
+flowchart TD
+    LOGIN["🔐 Login with Wallet"]
+    DASH["📊 WORKER DASHBOARD"]
+    
+    LOGIN --> DASH
+    
+    DASH --> PERF
+    DASH --> ORD
+    
+    subgraph PERF_SUB["Performance"]
+        PERF["📊 PERFORMANCE"]
+        PERF --> P1["My Statistics"]
+        PERF --> P2["Activity History"]
+        P1 --> P3["Completion Rate"]
+        P1 --> P4["Total Earnings"]
+        P2 --> P5["Filter & Details"]
+    end
+    
+    subgraph ORD_SUB["My Orders"]
+        ORD["📦 MY ORDERS"]
+        ORD --> O1["🟡 Skip"]
+        ORD --> O2["🟢 Completed"]
+        ORD --> O3["🔴 Rejected"]
+    end
+```
+
+| Module | Function |
+|--------|----------|
+| **📦 My Orders** | View order status (Skip, Completed, Rejected) |
+| **📊 Performance** | Personal statistics (completion rate, earnings) and detailed activity history |
+
 ### On-chain (Soroban)
 
 - **Factory Contract**
